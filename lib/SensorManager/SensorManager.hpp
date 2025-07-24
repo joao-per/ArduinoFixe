@@ -35,9 +35,27 @@ private:
     ExtMEM* logger;
     ExtMEM* csvLogger;
     
+    // Buffer for 10 physical readings
+    float tempReadings[10];
+    float humReadings[10];
+    int readingIndex;
+    bool bufferFull;
+    unsigned long lastPhysicalRead;
+    
 public:
     SensorManager(DHT_Unified* dhtSensor, ExtMEM* log, ExtMEM* csv) 
         : dht(dhtSensor), logger(log), csvLogger(csv) {
+        // Initialize reading buffer
+        readingIndex = 0;
+        bufferFull = false;
+        lastPhysicalRead = 0;
+        
+        // Clear reading buffers
+        for (int i = 0; i < 10; i++) {
+            tempReadings[i] = 0.0;
+            humReadings[i] = 0.0;
+        }
+        
         // Inicializar 4 sensores virtuais
         for (uint8_t i = 0; i < NUM_VIRTUAL_SENSORS; i++) {
             SensorReading sensor;
@@ -51,54 +69,149 @@ public:
         }
     }
     
-    // Ler todos os sensores (simula 4 a partir de 1)
-    void readAllSensors() {
+    // Update physical readings buffer (called every 100ms)
+    void updatePhysicalReadings() {
+        unsigned long currentTime = millis();
+        if (currentTime - lastPhysicalRead < PHYSICAL_READ_INTERVAL) {
+            return; // Not time yet
+        }
+        lastPhysicalRead = currentTime;
+        
         sensors_event_t event;
         
-        // Ler temperatura real
+        // Read physical DHT sensor
         dht->temperature().getEvent(&event);
-        float baseTemp = event.temperature;
+        float currentTemp = event.temperature;
         
-        // Ler humidade real
         dht->humidity().getEvent(&event);
-        float baseHum = event.relative_humidity;
+        float currentHum = event.relative_humidity;
         
-        // Debug: Show raw readings
-        char debugMsg[150];
-        sprintf(debugMsg, "Raw DHT readings - Temp: %.2f, Hum: %.2f", baseTemp, baseHum);
-        logger->debug(debugMsg);
+        // Check if reading is valid
+        if (isnan(currentTemp) || isnan(currentHum)) {
+            return; // Skip invalid readings
+        }
         
-        // Verificar se leitura é válida
-        if (isnan(baseTemp) || isnan(baseHum)) {
-            logger->error("Failed to read from DHT sensor!");
-            // Marcar todos como NOK
-            for (auto& sensor : sensors) {
-                sensor.state = SENSOR_NOK;
+        // Store in circular buffer
+        tempReadings[readingIndex] = currentTemp;
+        humReadings[readingIndex] = currentHum;
+        
+        readingIndex++;
+        if (readingIndex >= 10) {
+            readingIndex = 0;
+            bufferFull = true;
+        }
+    }
+    
+    // Calculate median from 10 readings
+    float calculateMedianTemp() {
+        if (!bufferFull && readingIndex < 5) {
+            return 0.0; // Not enough readings yet
+        }
+        
+        int count = bufferFull ? 10 : readingIndex;
+        float sortedTemps[10];
+        
+        // Copy and sort temperatures
+        for (int i = 0; i < count; i++) {
+            sortedTemps[i] = tempReadings[i];
+        }
+        
+        for (int i = 0; i < count-1; i++) {
+            for (int j = i+1; j < count; j++) {
+                if (sortedTemps[i] > sortedTemps[j]) {
+                    float temp = sortedTemps[i];
+                    sortedTemps[i] = sortedTemps[j];
+                    sortedTemps[j] = temp;
+                }
             }
+        }
+        
+        // Return median
+        if (count % 2 == 0) {
+            return (sortedTemps[count/2-1] + sortedTemps[count/2]) / 2.0;
+        } else {
+            return sortedTemps[count/2];
+        }
+    }
+    
+    float calculateMedianHum() {
+        if (!bufferFull && readingIndex < 5) {
+            return 0.0;
+        }
+        
+        int count = bufferFull ? 10 : readingIndex;
+        float sortedHums[10];
+        
+        for (int i = 0; i < count; i++) {
+            sortedHums[i] = humReadings[i];
+        }
+        
+        for (int i = 0; i < count-1; i++) {
+            for (int j = i+1; j < count; j++) {
+                if (sortedHums[i] > sortedHums[j]) {
+                    float temp = sortedHums[i];
+                    sortedHums[i] = sortedHums[j];
+                    sortedHums[j] = temp;
+                }
+            }
+        }
+        
+        if (count % 2 == 0) {
+            return (sortedHums[count/2-1] + sortedHums[count/2]) / 2.0;
+        } else {
+            return sortedHums[count/2];
+        }
+    }
+    
+    // Process and display sensors (called every 2 seconds)
+    void readAllSensors() {
+        // Get median from 10 physical readings
+        float medianTemp = calculateMedianTemp();
+        float medianHum = calculateMedianHum();
+        
+        if (medianTemp == 0.0) {
+            logger->debug("Collecting physical readings... (need 10 samples)");
             return;
         }
         
-        // Simular 4 sensores com pequenas variações
-        for (uint8_t i = 0; i < NUM_VIRTUAL_SENSORS; i++) {
-            sensors[i].temperature = baseTemp + tempOffset[i] + (random(-10, 10) / 10.0);
-            sensors[i].humidity = baseHum + humOffset[i] + (random(-20, 20) / 10.0);
+        // T1 = Median of 10 physical readings
+        sensors[0].temperature = medianTemp;
+        sensors[0].humidity = medianHum;
+        sensors[0].state = SENSOR_OK;
+        sensors[0].lastUpdate = millis();
+        
+        // T2, T3, T4 = Derived from T1 with small variations
+        for (uint8_t i = 1; i < NUM_VIRTUAL_SENSORS; i++) {
+            sensors[i].temperature = sensors[0].temperature + tempOffset[i] + (random(-5, 6) / 10.0);
+            sensors[i].humidity = sensors[0].humidity + humOffset[i] + (random(-10, 11) / 10.0);
             sensors[i].state = SENSOR_OK;
             sensors[i].lastUpdate = millis();
             
-            // Limitar valores
+            // Constrain values to realistic ranges
             sensors[i].temperature = constrain(sensors[i].temperature, -10, 50);
             sensors[i].humidity = constrain(sensors[i].humidity, 0, 100);
-            
-            // Simular falha ocasional (2% chance)
-            if (random(100) < 2) {
-                sensors[i].state = SENSOR_NOK;
-            }
         }
         
+        // Calculate final median from all 4 virtual sensors
+        float temps[NUM_VIRTUAL_SENSORS];
+        for (uint8_t i = 0; i < NUM_VIRTUAL_SENSORS; i++) {
+            temps[i] = sensors[i].temperature;
+        }
+        for (int i = 0; i < NUM_VIRTUAL_SENSORS-1; i++) {
+            for (int j = i+1; j < NUM_VIRTUAL_SENSORS; j++) {
+                if (temps[i] > temps[j]) {
+                    float temp = temps[i];
+                    temps[i] = temps[j];
+                    temps[j] = temp;
+                }
+            }
+        }
+        float finalMedian = (temps[1] + temps[2]) / 2.0;
+        
+        // Log individual sensors and median
         char msg[200];
-        sprintf(msg, "DHT Status - Temp: %s, Hum: %s", 
-                isnan(baseTemp) ? "FAIL" : String(baseTemp, 1).c_str(),
-                isnan(baseHum) ? "FAIL" : String(baseHum, 1).c_str());
+        sprintf(msg, "Sensors: T1=%.1f°C(median) T2=%.1f°C T3=%.1f°C T4=%.1f°C | Final=%.1f°C", 
+                sensors[0].temperature, sensors[1].temperature, sensors[2].temperature, sensors[3].temperature, finalMedian);
         logger->debug(msg);
     }
     

@@ -259,7 +259,7 @@ void setup() {
     Serial.println("3. Initializing RTC...");
     if (initRTC()) {
         Serial.println("   ✓ RTC OK");
-        // set_rtc_time(2025, 7, 17, 11, 01, 02); // Commented out - let RTC use real time
+        setRTCToCompileTime(); // Set RTC to compilation time
     } else {
         Serial.println("   ✗ RTC failed!");
     }
@@ -311,7 +311,10 @@ void loop() {
     // 2. Processar interrupções
     interruptManager->processInterrupts(systemControl);
     
-    // 3. Ler sensores (por timer ou intervalo)
+    // 3. Update physical readings continuously (10x per second)
+    sensorManager->updatePhysicalReadings();
+    
+    // 4. Process sensors and show debug (every 2 seconds)
     if (interruptManager->isTimerTriggered() || 
         (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL)) {
         lastSensorRead = currentTime;

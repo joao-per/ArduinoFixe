@@ -40,7 +40,8 @@ static constexpr int uSD_CS_PIN = PB6;
 // ========== SYSTEM PARAMETERS ==========
 #define NUM_SENSORS 4               // Número de sensores (virtuais)
 #define NUM_READINGS 10             // Número de leituras para média
-#define SENSOR_READ_INTERVAL 2000   // ms entre leituras
+#define SENSOR_READ_INTERVAL 2000   // ms entre debug output (every 2 seconds)
+#define PHYSICAL_READ_INTERVAL 100  // ms between physical sensor reads (10x per second)
 #define MQTT_PUBLISH_INTERVAL 5000  // ms entre publicações
 #define DEFAULT_TEMP_MIN 20.0       // °C
 #define DEFAULT_TEMP_MAX 45.0       // °C
@@ -88,7 +89,7 @@ static constexpr uint32_t MAX_FILE_SIZE = 1048576; // 1MB
 
 // ========== THRESHOLDS ==========
 #define TEMP_CRITICAL_HIGH 50.0     // °C - temperatura crítica
-#define TEMP_WARNING_HIGH 40.0      // °C - aviso de temperatura alta
+#define TEMP_WARNING_HIGH 30.0      // °C - aviso de temperatura alta
 #define HUMIDITY_LOW 20.0           // % - humidade baixa
 #define HUMIDITY_HIGH 80.0          // % - humidade alta
 
