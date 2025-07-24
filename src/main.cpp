@@ -80,9 +80,16 @@ configData config_data = {0};
 
 // Inicializar todos os LEDs
 void initializeLEDs() {
+    Serial.println("   Initializing LEDs...");
+    
+    // Initialize with direct pin control for temperature LEDs
+    pinMode(LED_GREEN, OUTPUT);
+    pinMode(LED_RED, OUTPUT);
+    digitalWrite(LED_GREEN, LOW);
+    digitalWrite(LED_RED, LOW);
+    Serial.println("   Temperature LEDs (PC12, PC15) initialized");
+    
     ledStatus.init(LED_PIN);
-    ledGreen.init(LED_GREEN);
-    ledRed.init(LED_RED);
     ledSensor1.init(LED_SENSOR1);
     ledSensor2.init(LED_SENSOR2);
     ledSensor3.init(LED_SENSOR3);
@@ -90,17 +97,17 @@ void initializeLEDs() {
     ledWifi.init(LED_WIFI);
     ledSD.init(LED_SD);
     
-    // Teste inicial - piscar todos
+    // Teste inicial - piscar LEDs de temperatura
+    Serial.println("   Testing temperature LEDs...");
     for (int i = 0; i < 3; i++) {
-        ledStatus.on(); ledGreen.on(); ledRed.on();
-        ledSensor1.on(); ledSensor2.on(); ledSensor3.on();
-        ledSensor4.on(); ledWifi.on(); ledSD.on();
-        delay(200);
-        ledStatus.off(); ledGreen.off(); ledRed.off();
-        ledSensor1.off(); ledSensor2.off(); ledSensor3.off();
-        ledSensor4.off(); ledWifi.off(); ledSD.off();
-        delay(200);
+        digitalWrite(LED_GREEN, HIGH);
+        digitalWrite(LED_RED, HIGH);
+        delay(300);
+        digitalWrite(LED_GREEN, LOW);
+        digitalWrite(LED_RED, LOW);
+        delay(300);
     }
+    Serial.println("   LED test complete");
 }
 
 // Atualizar LEDs baseado no estado do sistema
@@ -112,14 +119,24 @@ void updateLEDs() {
         ledStatus.toggle();
     }
     
-    // LEDs de temperatura (verde <30°C, vermelho >=30°C)
+    // LEDs de temperatura (verde <30°C, vermelho >=30°C) - Direct pin control
     float avgTemp = sensorManager->getAverageTemperature();
+    static bool wasAbove30 = false;
+    
     if (avgTemp < 30.0) {
-        ledGreen.on();
-        ledRed.off();
+        digitalWrite(LED_GREEN, HIGH);
+        digitalWrite(LED_RED, LOW);
+        if (wasAbove30) {
+            logs.info("Temperature back to normal (<30°C)");
+            wasAbove30 = false;
+        }
     } else {
-        ledGreen.off();
-        ledRed.on();
+        digitalWrite(LED_GREEN, LOW);
+        digitalWrite(LED_RED, HIGH);
+        if (!wasAbove30) {
+            logs.warning("Temperature WARNING: reached 30°C or above");
+            wasAbove30 = true;
+        }
     }
     
     // LEDs dos sensores
