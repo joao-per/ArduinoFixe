@@ -67,6 +67,7 @@ unsigned long lastCsvSave = 0;
 bool sdCardAvailable = false;
 bool wifiConnected = false;
 bool mqttConnected = false;
+bool systemInitialized = false;
 
 // Buffers (definições das variáveis externas do config.hpp)
 char floatString_temperature[10];
@@ -123,19 +124,19 @@ void updateLEDs() {
     float avgTemp = sensorManager->getAverageTemperature();
     static bool wasAbove30 = false;
     
-    if (avgTemp < 30.0) {
-        digitalWrite(LED_GREEN, HIGH);
-        digitalWrite(LED_RED, LOW);
-        if (wasAbove30) {
-            logs.info("Temperature back to normal (<30°C)");
-            wasAbove30 = false;
-        }
-    } else {
+    if (avgTemp >= 30.0) {
         digitalWrite(LED_GREEN, LOW);
         digitalWrite(LED_RED, HIGH);
         if (!wasAbove30) {
             logs.warning("Temperature WARNING: reached 30°C or above");
             wasAbove30 = true;
+        }
+    } else {
+        digitalWrite(LED_GREEN, HIGH);
+        digitalWrite(LED_RED, LOW);
+        if (wasAbove30) {
+            logs.info("Temperature back to normal (<30°C)");
+            wasAbove30 = false;
         }
     }
     
@@ -321,6 +322,7 @@ void setup() {
     
     // Log de início
     logs.info("System initialization complete");
+    systemInitialized = true;
     
     Serial.println("\n✓ System ready!\n");
     delay(1000);
@@ -336,9 +338,9 @@ void loop() {
     // 2. Processar interrupções
     interruptManager->processInterrupts(systemControl);
     
-    // 3. Process sensors and show debug (every 2 seconds)
-    if (interruptManager->isTimerTriggered() || 
-        (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL)) {
+    // 3. Process sensors and show debug (every 2 seconds) - only after initialization
+    if (systemInitialized && (interruptManager->isTimerTriggered() || 
+        (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL))) {
         lastSensorRead = currentTime;
         
         sensorManager->readAllSensors();
@@ -371,26 +373,26 @@ void loop() {
         updateLEDs();
     }
     
-    // 7. Imprimir status no Serial (debug)
+    // 7. Imprimir status no Serial (debug) - apenas uma vez
     static unsigned long lastSerialPrint = 0;
-    if (IS_DEBUG_LOG && (currentTime - lastSerialPrint >= 10000)) {
-        lastSerialPrint = currentTime;
+    static bool statusReportShown = false;
+    if (IS_DEBUG_LOG && !statusReportShown && (currentTime > 15000)) { // After 15 seconds
+        statusReportShown = true;
         
         DateTime now = get_rtc_datetime();
-        Serial.printf("\n[%02d:%02d:%02d] Status Report:\n", 
-                      now.hours, now.minutes, now.seconds);
-        Serial.printf("  Mode: %s | Emergency: %s\n",
-                      systemControl->getModeString().c_str(),
-                      systemControl->isEmergency() ? "YES" : "NO");
-        Serial.printf("  Temp: %.1f°C (%.1f-%.1f) | Humidity: %.1f%%\n",
-                      sensorManager->getAverageTemperature(),
-                      systemControl->getTempMin(),
-                      systemControl->getTempMax(),
-                      sensorManager->getAverageHumidity());
-        Serial.printf("  Actuators: %s | WiFi: %s | MQTT: %s | SD: %s\n",
-                      systemControl->getActuatorsState() ? "ON" : "OFF",
-                      wifiConnected ? "OK" : "NOK",
-                      mqttConnected ? "OK" : "NOK",
-                      sdCardAvailable ? "OK" : "NOK");
+        char statusMsg[300];
+        sprintf(statusMsg, "[%02d/%02d/%04d %02d:%02d:%02d] [INFO] Status Report: Mode: %s | Emergency: %s | Temp: %.1f°C | Humidity: %.1f%% | Actuators: %s | WiFi: %s | MQTT: %s | SD: %s",
+                now.day, now.month, now.year, now.hours, now.minutes, now.seconds,
+                systemControl->getModeString().c_str(),
+                systemControl->isEmergency() ? "YES" : "NO",
+                sensorManager->getAverageTemperature(),
+                sensorManager->getAverageHumidity(),
+                systemControl->getActuatorsState() ? "ON" : "OFF",
+                wifiConnected ? "OK" : "NOK",
+                mqttConnected ? "OK" : "NOK",
+                sdCardAvailable ? "OK" : "NOK");
+        
+        Serial.println(statusMsg);
+        logs.info("Status Report generated");
     }
 }
