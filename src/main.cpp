@@ -249,8 +249,8 @@ void setup() {
         logs.initFile("log");
         csv.initFile("csv");
         csv.data(CSV_HEADER);
-        asn.readSN();
-        Serial.println("   ✓ SD Card OK");
+        // asn.readSN(); // Commented out - no config.json file available
+        Serial.println("   ✓ SD Card OK (config file skipped)");
     } else {
         Serial.println("   ✗ SD Card failed!");
     }
