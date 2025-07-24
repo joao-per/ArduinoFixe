@@ -315,7 +315,10 @@ void loop() {
     if (interruptManager->isTimerTriggered() || 
         (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL)) {
         lastSensorRead = currentTime;
+        
+        Serial.println("[MAIN] About to call readAllSensors()"); // Debug
         sensorManager->readAllSensors();
+        Serial.println("[MAIN] Finished readAllSensors()"); // Debug
         
         // Processar controlo automático
         float avgTemp = sensorManager->getAverageTemperature();
