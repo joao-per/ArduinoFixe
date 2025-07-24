@@ -7,11 +7,10 @@
 #include <config.hpp>
 #include "server.hpp"
 
-// Create WiFi and MQTT clients
-WiFiClient wifiClient;
-PubSubClient mqttClient(wifiClient);
-
-server sv(SERVER_SSID, SERVER_PASSWORD, SERVER_IP, SERVER_PORT);
+// External declarations of WiFi and MQTT clients
+extern WiFiClient wifiClient;
+extern PubSubClient mqttClient;
+extern server sv;
 
 void callback(char *topic, byte *payload, unsigned int length);
 void connectWiFi();

@@ -1,5 +1,10 @@
 #include "connect.hpp"
 
+// Global variable definitions
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+server sv(SERVER_SSID, SERVER_PASSWORD, SERVER_IP, SERVER_PORT);
+
 // MQTT Receive
 void callback(char *topic, byte *payload, unsigned int length)
 {
