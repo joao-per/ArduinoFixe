@@ -189,7 +189,10 @@ public:
         } else if (isnan(baseHum)) {
             sprintf(rawMsg, "Raw DHT - Temp: %.2f, Hum: NaN (hum invalid)", baseTemp);
         } else {
-            sprintf(rawMsg, "Raw DHT - Temp: %.2f, Hum: %.2f (both valid)", baseTemp, baseHum);
+            char tempStr[10], humStr[10];
+            dtostrf(baseTemp, 4, 2, tempStr);
+            dtostrf(baseHum, 4, 2, humStr);
+            sprintf(rawMsg, "Raw DHT - Temp: %s, Hum: %s (both valid)", tempStr, humStr);
         }
         logger->debug(rawMsg);
         
@@ -242,10 +245,16 @@ public:
         
         logger->debug("About to display final sensor values...");
         
-        // Log individual sensors and median  
+        // Log individual sensors and median using dtostrf (more reliable for STM32)
+        char t1[10], t2[10], t3[10], t4[10], med[10];
+        dtostrf(sensors[0].temperature, 4, 1, t1);
+        dtostrf(sensors[1].temperature, 4, 1, t2);
+        dtostrf(sensors[2].temperature, 4, 1, t3);
+        dtostrf(sensors[3].temperature, 4, 1, t4);
+        dtostrf(medianTemp, 4, 1, med);
+        
         char msg[200];
-        sprintf(msg, "Sensors: T1=%.1f°C T2=%.1f°C T3=%.1f°C T4=%.1f°C | Median=%.1f°C", 
-                sensors[0].temperature, sensors[1].temperature, sensors[2].temperature, sensors[3].temperature, medianTemp);
+        sprintf(msg, "Sensors: T1=%s°C T2=%s°C T3=%s°C T4=%s°C | Median=%s°C", t1, t2, t3, t4, med);
         logger->debug(msg);
         
         logger->debug("Finished displaying sensor values!");
