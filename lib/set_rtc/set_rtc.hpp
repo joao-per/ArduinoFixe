@@ -4,8 +4,15 @@
 // Framework libs
 #include <STM32RTC.h>
 
-// Local Includes
-#include <config.hpp>
+// DateTime structure definition
+struct DateTime {
+    uint8_t day;
+    uint8_t month;
+    uint16_t year;
+    uint8_t hours;
+    uint8_t minutes;
+    uint8_t seconds;
+};
 
 bool initRTC();
 

@@ -31,31 +31,10 @@ public:
     InterruptManager(ExtMEM* log) : logger(log) {}
     
     // Configurar interrupções de hardware (botões)
-    void setupHardwareInterrupts() {
-        // Configurar pinos dos botões
-        pinMode(BTN_USER, INPUT_PULLUP);     // Botão user da placa
-        pinMode(BTN_EMERGENCY, INPUT_PULLUP); // Botão externo emergência
-        pinMode(BTN_MODE, INPUT_PULLUP);      // Botão externo modo
-        
-        // Anexar interrupções
-        attachInterrupt(digitalPinToInterrupt(BTN_EMERGENCY), emergencyButtonISR, FALLING);
-        attachInterrupt(digitalPinToInterrupt(BTN_MODE), modeButtonISR, FALLING);
-        
-        logger->info("Hardware interrupts configured");
-    }
+    void setupHardwareInterrupts();
     
     // Configurar interrupção por timer (software)
-    void setupTimerInterrupt() {
-        // STM32L476 tem vários timers, usar TIM2
-        timer2 = new HardwareTimer(TIM2);
-        
-        // Configurar para 1Hz (1 segundo)
-        timer2->setOverflow(1, HERTZ_FORMAT);
-        timer2->attachInterrupt(timerISR);
-        timer2->resume();
-        
-        logger->info("Timer interrupt configured (1Hz)");
-    }
+    void setupTimerInterrupt();
     
     // Processar flags das interrupções
     void processInterrupts(SystemControl* control);

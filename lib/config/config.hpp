@@ -111,18 +111,7 @@ struct configData {
 
 extern configData config_data;
 
-// Estrutura DateTime (se não estiver definida em set_rtc.hpp)
-#ifndef DATETIME_STRUCT_DEFINED
-#define DATETIME_STRUCT_DEFINED
-struct DateTime {
-    uint8_t day;
-    uint8_t month;
-    uint16_t year;
-    uint8_t hours;
-    uint8_t minutes;
-    uint8_t seconds;
-};
-#endif
+// DateTime is now defined in set_rtc.hpp
 
 // Buffers globais
 extern char floatString_temperature[10];
