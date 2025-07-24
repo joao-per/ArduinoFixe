@@ -1,5 +1,6 @@
 // Local Includes
 #include "set_rtc.hpp"
+#include "config.hpp"
 
 // Use the default STM32 RTC instance
 STM32RTC &rtc = STM32RTC::getInstance();
