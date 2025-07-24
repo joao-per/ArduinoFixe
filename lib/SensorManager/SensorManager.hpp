@@ -163,26 +163,27 @@ public:
         }
     }
     
-    // Process and display sensors (called every 2 seconds)
+    // Simple sensor reading (back to working version)
     void readAllSensors() {
-        // Debug: Show buffer status
-        char bufferMsg[100];
-        sprintf(bufferMsg, "Buffer status: Index=%d, Full=%s, Samples=%d", 
-                readingIndex, bufferFull ? "YES" : "NO", bufferFull ? 10 : readingIndex);
-        logger->debug(bufferMsg);
+        sensors_event_t event;
         
-        // Get median from 10 physical readings
-        float medianTemp = calculateMedianTemp();
-        float medianHum = calculateMedianHum();
+        // Read physical DHT sensor
+        dht->temperature().getEvent(&event);
+        float baseTemp = event.temperature;
         
-        if (medianTemp == 0.0) {
-            logger->debug("Collecting physical readings... (need more samples)");
+        dht->humidity().getEvent(&event);
+        float baseHum = event.relative_humidity;
+        
+        // Check if readings are valid
+        if (isnan(baseTemp) || isnan(baseHum)) {
+            logger->debug("DHT Status - Temp: FAIL, Hum: FAIL");
+            logger->error("Failed to read from DHT sensor!");
             return;
         }
         
-        // T1 = Median of 10 physical readings
-        sensors[0].temperature = medianTemp;
-        sensors[0].humidity = medianHum;
+        // T1 = Real DHT reading 
+        sensors[0].temperature = baseTemp;
+        sensors[0].humidity = baseHum;
         sensors[0].state = SENSOR_OK;
         sensors[0].lastUpdate = millis();
         
@@ -198,7 +199,7 @@ public:
             sensors[i].humidity = constrain(sensors[i].humidity, 0, 100);
         }
         
-        // Calculate final median from all 4 virtual sensors
+        // Calculate median from all 4 sensors
         float temps[NUM_VIRTUAL_SENSORS];
         for (uint8_t i = 0; i < NUM_VIRTUAL_SENSORS; i++) {
             temps[i] = sensors[i].temperature;
@@ -212,12 +213,12 @@ public:
                 }
             }
         }
-        float finalMedian = (temps[1] + temps[2]) / 2.0;
+        float medianTemp = (temps[1] + temps[2]) / 2.0;
         
-        // Log individual sensors and median
+        // Log individual sensors and median  
         char msg[200];
-        sprintf(msg, "Sensors: T1=%.1f°C(median) T2=%.1f°C T3=%.1f°C T4=%.1f°C | Final=%.1f°C", 
-                sensors[0].temperature, sensors[1].temperature, sensors[2].temperature, sensors[3].temperature, finalMedian);
+        sprintf(msg, "Sensors: T1=%.1f°C T2=%.1f°C T3=%.1f°C T4=%.1f°C | Median=%.1f°C", 
+                sensors[0].temperature, sensors[1].temperature, sensors[2].temperature, sensors[3].temperature, medianTemp);
         logger->debug(msg);
     }
     

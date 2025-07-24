@@ -311,10 +311,7 @@ void loop() {
     // 2. Processar interrupções
     interruptManager->processInterrupts(systemControl);
     
-    // 3. Update physical readings continuously (10x per second)
-    sensorManager->updatePhysicalReadings();
-    
-    // 4. Process sensors and show debug (every 2 seconds)
+    // 3. Process sensors and show debug (every 2 seconds)
     if (interruptManager->isTimerTriggered() || 
         (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL)) {
         lastSensorRead = currentTime;
