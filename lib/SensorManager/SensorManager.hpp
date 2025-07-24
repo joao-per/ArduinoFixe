@@ -104,7 +104,7 @@ public:
     
     // Calculate median from 10 readings
     float calculateMedianTemp() {
-        if (!bufferFull && readingIndex < 5) {
+        if (!bufferFull && readingIndex < 3) {
             return 0.0; // Not enough readings yet
         }
         
@@ -135,7 +135,7 @@ public:
     }
     
     float calculateMedianHum() {
-        if (!bufferFull && readingIndex < 5) {
+        if (!bufferFull && readingIndex < 3) {
             return 0.0;
         }
         
@@ -165,12 +165,18 @@ public:
     
     // Process and display sensors (called every 2 seconds)
     void readAllSensors() {
+        // Debug: Show buffer status
+        char bufferMsg[100];
+        sprintf(bufferMsg, "Buffer status: Index=%d, Full=%s, Samples=%d", 
+                readingIndex, bufferFull ? "YES" : "NO", bufferFull ? 10 : readingIndex);
+        logger->debug(bufferMsg);
+        
         // Get median from 10 physical readings
         float medianTemp = calculateMedianTemp();
         float medianHum = calculateMedianHum();
         
         if (medianTemp == 0.0) {
-            logger->debug("Collecting physical readings... (need 10 samples)");
+            logger->debug("Collecting physical readings... (need more samples)");
             return;
         }
         

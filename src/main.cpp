@@ -259,7 +259,7 @@ void setup() {
     Serial.println("3. Initializing RTC...");
     if (initRTC()) {
         Serial.println("   ✓ RTC OK");
-        setRTCToCompileTime(); // Set RTC to compilation time
+        setRTCToCompileTime(); // Set RTC to compilation time (closest to real time)
     } else {
         Serial.println("   ✗ RTC failed!");
     }
