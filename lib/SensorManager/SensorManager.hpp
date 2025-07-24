@@ -180,9 +180,17 @@ public:
         dht->humidity().getEvent(&event);
         float baseHum = event.relative_humidity;
         
-        // Debug: Show raw values (even if NaN)
-        char rawMsg[100];
-        sprintf(rawMsg, "Raw DHT - Temp: %.2f, Hum: %.2f", baseTemp, baseHum);
+        // Debug: Show raw values with explicit NaN check
+        char rawMsg[150];
+        if (isnan(baseTemp) && isnan(baseHum)) {
+            sprintf(rawMsg, "Raw DHT - Temp: NaN, Hum: NaN (both invalid)");
+        } else if (isnan(baseTemp)) {
+            sprintf(rawMsg, "Raw DHT - Temp: NaN, Hum: %.2f (temp invalid)", baseHum);
+        } else if (isnan(baseHum)) {
+            sprintf(rawMsg, "Raw DHT - Temp: %.2f, Hum: NaN (hum invalid)", baseTemp);
+        } else {
+            sprintf(rawMsg, "Raw DHT - Temp: %.2f, Hum: %.2f (both valid)", baseTemp, baseHum);
+        }
         logger->debug(rawMsg);
         
         // Check if readings are valid
