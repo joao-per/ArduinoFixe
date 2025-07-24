@@ -200,11 +200,15 @@ public:
             return;
         }
         
+        logger->debug("DHT readings are valid, creating virtual sensors...");
+        
         // T1 = Real DHT reading 
         sensors[0].temperature = baseTemp;
         sensors[0].humidity = baseHum;
         sensors[0].state = SENSOR_OK;
         sensors[0].lastUpdate = millis();
+        
+        logger->debug("T1 sensor created, generating T2/T3/T4...");
         
         // T2, T3, T4 = Derived from T1 with small variations
         for (uint8_t i = 1; i < NUM_VIRTUAL_SENSORS; i++) {
@@ -217,6 +221,8 @@ public:
             sensors[i].temperature = constrain(sensors[i].temperature, -10, 50);
             sensors[i].humidity = constrain(sensors[i].humidity, 0, 100);
         }
+        
+        logger->debug("All virtual sensors created, calculating median...");
         
         // Calculate median from all 4 sensors
         float temps[NUM_VIRTUAL_SENSORS];
@@ -234,11 +240,15 @@ public:
         }
         float medianTemp = (temps[1] + temps[2]) / 2.0;
         
+        logger->debug("About to display final sensor values...");
+        
         // Log individual sensors and median  
         char msg[200];
         sprintf(msg, "Sensors: T1=%.1f°C T2=%.1f°C T3=%.1f°C T4=%.1f°C | Median=%.1f°C", 
                 sensors[0].temperature, sensors[1].temperature, sensors[2].temperature, sensors[3].temperature, medianTemp);
         logger->debug(msg);
+        
+        logger->debug("Finished displaying sensor values!");
     }
     
     // Obter dados de um sensor específico
