@@ -167,12 +167,23 @@ public:
     void readAllSensors() {
         sensors_event_t event;
         
+        // Debug: Check if DHT object exists
+        if (!dht) {
+            logger->debug("ERROR: DHT object is NULL!");
+            return;
+        }
+        
         // Read physical DHT sensor
         dht->temperature().getEvent(&event);
         float baseTemp = event.temperature;
         
         dht->humidity().getEvent(&event);
         float baseHum = event.relative_humidity;
+        
+        // Debug: Show raw values (even if NaN)
+        char rawMsg[100];
+        sprintf(rawMsg, "Raw DHT - Temp: %.2f, Hum: %.2f", baseTemp, baseHum);
+        logger->debug(rawMsg);
         
         // Check if readings are valid
         if (isnan(baseTemp) || isnan(baseHum)) {
