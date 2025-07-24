@@ -1,5 +1,4 @@
 #include "InterruptManager.hpp"
-#include "logs.hpp"
 #include "SystemControl.hpp"
 
 // Global variable definitions
@@ -31,4 +30,21 @@ void modeButtonISR() {
 
 void timerISR() {
     timerFlag = true;
+}
+
+// InterruptManager method implementations
+void InterruptManager::processInterrupts(SystemControl* control) {
+    // Processar botão de emergência
+    if (emergencyButtonPressed) {
+        emergencyButtonPressed = false;
+        control->toggleEmergency();
+    }
+    
+    // Processar botão de modo
+    if (modeButtonPressed) {
+        modeButtonPressed = false;
+        control->toggleMode();
+    }
+    
+    // Flag do timer é processada no loop principal
 }

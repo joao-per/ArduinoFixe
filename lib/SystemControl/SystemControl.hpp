@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <config.hpp>
 #include "logs.hpp"
+#include "set_rtc.hpp"
 
 enum SystemMode {
     MODE_MANUAL,

@@ -58,21 +58,7 @@ public:
     }
     
     // Processar flags das interrupções
-    void processInterrupts(SystemControl* control) {
-        // Processar botão de emergência
-        if (emergencyButtonPressed) {
-            emergencyButtonPressed = false;
-            control->toggleEmergency();
-        }
-        
-        // Processar botão de modo
-        if (modeButtonPressed) {
-            modeButtonPressed = false;
-            control->toggleMode();
-        }
-        
-        // Flag do timer é processada no loop principal
-    }
+    void processInterrupts(SystemControl* control);
     
     // Verificar se o timer disparou
     bool isTimerTriggered() {
