@@ -259,7 +259,7 @@ void setup() {
     Serial.println("3. Initializing RTC...");
     if (initRTC()) {
         Serial.println("   ✓ RTC OK");
-        set_rtc_time(2025, 7, 17, 11, 01, 02);
+        // set_rtc_time(2025, 7, 17, 11, 01, 02); // Commented out - let RTC use real time
     } else {
         Serial.println("   ✗ RTC failed!");
     }

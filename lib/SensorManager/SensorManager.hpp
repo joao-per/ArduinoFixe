@@ -63,6 +63,11 @@ public:
         dht->humidity().getEvent(&event);
         float baseHum = event.relative_humidity;
         
+        // Debug: Show raw readings
+        char debugMsg[150];
+        sprintf(debugMsg, "Raw DHT readings - Temp: %.2f, Hum: %.2f", baseTemp, baseHum);
+        logger->debug(debugMsg);
+        
         // Verificar se leitura é válida
         if (isnan(baseTemp) || isnan(baseHum)) {
             logger->error("Failed to read from DHT sensor!");
@@ -90,12 +95,10 @@ public:
             }
         }
         
-        char msg[150];
-        if (isnan(baseTemp)) {
-            sprintf(msg, "DHT sensor not connected - Base temp: NaN°C, Humidity: NaN%%");
-        } else {
-            sprintf(msg, "Sensors read successfully. Base temp: %.1f°C, Humidity: %.1f%%", baseTemp, baseHum);
-        }
+        char msg[200];
+        sprintf(msg, "DHT Status - Temp: %s, Hum: %s", 
+                isnan(baseTemp) ? "FAIL" : String(baseTemp, 1).c_str(),
+                isnan(baseHum) ? "FAIL" : String(baseHum, 1).c_str());
         logger->debug(msg);
     }
     

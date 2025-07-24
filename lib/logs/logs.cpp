@@ -70,8 +70,12 @@ void ExtMEM::info(const char *message)
   {
     sprintf(date_time, "%u", millis());
   }
-
-  // TODO: Get RTC date and time
+  else
+  {
+    // Get RTC date and time
+    DateTime now = get_rtc_datetime();
+    sprintf(date_time, "%02d/%02d/%04d %02d:%02d:%02d", now.day, now.month, now.year, now.hours, now.minutes, now.seconds);
+  }
 
   char formatted_log_message[strlen(date_time) + strlen(message) + 100];
   snprintf(formatted_log_message, sizeof(formatted_log_message), "[%s] [INFO] %s", date_time, message);
@@ -106,7 +110,7 @@ void ExtMEM::debug(const char *message)
   {
     // Get RTC date and time
     DateTime now = get_rtc_datetime();
-    sprintf(date_time, "%02d:%02d:%02d", now.hours, now.minutes, now.seconds);
+    sprintf(date_time, "%02d/%02d/%04d %02d:%02d:%02d", now.day, now.month, now.year, now.hours, now.minutes, now.seconds);
   }
 
   char formatted_log_message[strlen(date_time) + strlen(message) + 100];
@@ -138,8 +142,12 @@ void ExtMEM::warning(const char *message)
   {
     sprintf(date_time, "%u", millis());
   }
-
-  // TODO: Get RTC date and time
+  else
+  {
+    // Get RTC date and time
+    DateTime now = get_rtc_datetime();
+    sprintf(date_time, "%02d/%02d/%04d %02d:%02d:%02d", now.day, now.month, now.year, now.hours, now.minutes, now.seconds);
+  }
 
   char formatted_log_message[strlen(date_time) + strlen(message) + 100];
   snprintf(formatted_log_message, sizeof(formatted_log_message), "[%s] [WARNING] %s", date_time, message);
@@ -170,8 +178,12 @@ void ExtMEM::error(const char *message)
   {
     sprintf(date_time, "%u", millis());
   }
-
-  // TODO: Get RTC date and time
+  else
+  {
+    // Get RTC date and time
+    DateTime now = get_rtc_datetime();
+    sprintf(date_time, "%02d/%02d/%04d %02d:%02d:%02d", now.day, now.month, now.year, now.hours, now.minutes, now.seconds);
+  }
 
   char formatted_log_message[strlen(date_time) + strlen(message) + 100];
   snprintf(formatted_log_message, sizeof(formatted_log_message), "[%s] [ERROR] %s", date_time, message);
