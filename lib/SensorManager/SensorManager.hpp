@@ -90,8 +90,12 @@ public:
             }
         }
         
-        char msg[100];
-        sprintf(msg, "Sensors read successfully. Base temp: %.1f°C", baseTemp);
+        char msg[150];
+        if (isnan(baseTemp)) {
+            sprintf(msg, "DHT sensor not connected - Base temp: NaN°C, Humidity: NaN%%");
+        } else {
+            sprintf(msg, "Sensors read successfully. Base temp: %.1f°C, Humidity: %.1f%%", baseTemp, baseHum);
+        }
         logger->debug(msg);
     }
     

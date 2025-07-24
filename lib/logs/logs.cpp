@@ -1,5 +1,6 @@
 // Local Includes
 #include "logs.hpp"
+#include "set_rtc.hpp"
 
 char filename[20];
 char date_time[20];
@@ -101,8 +102,12 @@ void ExtMEM::debug(const char *message)
   {
     sprintf(date_time, "%u", millis());
   }
-
-  // TODO: Get RTC date and time
+  else
+  {
+    // Get RTC date and time
+    DateTime now = get_rtc_datetime();
+    sprintf(date_time, "%02d:%02d:%02d", now.hours, now.minutes, now.seconds);
+  }
 
   char formatted_log_message[strlen(date_time) + strlen(message) + 100];
   snprintf(formatted_log_message, sizeof(formatted_log_message), "[%s] [DEBUG] %s", date_time, message);
