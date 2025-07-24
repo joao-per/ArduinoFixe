@@ -43,6 +43,8 @@ InterruptManager* interruptManager;
 
 // LEDs
 GPI ledStatus;
+GPI ledGreen;
+GPI ledRed;
 GPI ledSensor1;
 GPI ledSensor2;
 GPI ledSensor3;
@@ -79,6 +81,8 @@ configData config_data = {0};
 // Inicializar todos os LEDs
 void initializeLEDs() {
     ledStatus.init(LED_PIN);
+    ledGreen.init(LED_GREEN);
+    ledRed.init(LED_RED);
     ledSensor1.init(LED_SENSOR1);
     ledSensor2.init(LED_SENSOR2);
     ledSensor3.init(LED_SENSOR3);
@@ -88,11 +92,13 @@ void initializeLEDs() {
     
     // Teste inicial - piscar todos
     for (int i = 0; i < 3; i++) {
-        ledStatus.on(); ledSensor1.on(); ledSensor2.on();
-        ledSensor3.on(); ledSensor4.on(); ledWifi.on(); ledSD.on();
+        ledStatus.on(); ledGreen.on(); ledRed.on();
+        ledSensor1.on(); ledSensor2.on(); ledSensor3.on();
+        ledSensor4.on(); ledWifi.on(); ledSD.on();
         delay(200);
-        ledStatus.off(); ledSensor1.off(); ledSensor2.off();
-        ledSensor3.off(); ledSensor4.off(); ledWifi.off(); ledSD.off();
+        ledStatus.off(); ledGreen.off(); ledRed.off();
+        ledSensor1.off(); ledSensor2.off(); ledSensor3.off();
+        ledSensor4.off(); ledWifi.off(); ledSD.off();
         delay(200);
     }
 }
@@ -104,6 +110,16 @@ void updateLEDs() {
     if (millis() - lastBlink > 1000) {
         lastBlink = millis();
         ledStatus.toggle();
+    }
+    
+    // LEDs de temperatura (verde <30°C, vermelho >=30°C)
+    float avgTemp = sensorManager->getAverageTemperature();
+    if (avgTemp < 30.0) {
+        ledGreen.on();
+        ledRed.off();
+    } else {
+        ledGreen.off();
+        ledRed.on();
     }
     
     // LEDs dos sensores
@@ -264,15 +280,10 @@ void setup() {
         Serial.println("   ✗ RTC failed!");
     }
     
-    // 4. Inicializar WiFi - SKIPPED (no WiFi available)
-    Serial.println("4. Skipping WiFi initialization (no network available)");
+    // 4. WiFi/MQTT - SKIPPED
+    Serial.println("4. WiFi/MQTT initialization - SKIPPED");
     wifiConnected = false;
     mqttConnected = false;
-    Serial.println("   ✗ WiFi skipped");
-    
-    // 5. Inicializar MQTT - SKIPPED (depends on WiFi)
-    Serial.println("5. Skipping MQTT initialization (no WiFi available)");
-    Serial.println("   ✗ MQTT skipped");
     
     // 6. Inicializar sensores
     Serial.println("6. Initializing sensors...");
@@ -303,10 +314,7 @@ void setup() {
 void loop() {
     unsigned long currentTime = millis();
     
-    // 1. Verificar conexões - SKIPPED (no WiFi available)
-    // WiFi and MQTT connections skipped - running in local mode only
-    wifiConnected = false;
-    mqttConnected = false;
+    // 1. Network connections - SKIPPED
     
     // 2. Processar interrupções
     interruptManager->processInterrupts(systemControl);
@@ -316,22 +324,14 @@ void loop() {
         (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL)) {
         lastSensorRead = currentTime;
         
-        Serial.println("[MAIN] About to call readAllSensors()"); // Debug
         sensorManager->readAllSensors();
-        Serial.println("[MAIN] Finished readAllSensors()"); // Debug
         
         // Processar controlo automático
         float avgTemp = sensorManager->getAverageTemperature();
         systemControl->processControl(avgTemp);
     }
     
-    // 4. Publicar dados MQTT - SKIPPED (no MQTT connection)
-    // MQTT publishing skipped - data only logged locally
-    if (currentTime - lastMqttPublish >= MQTT_PUBLISH_INTERVAL) {
-        lastMqttPublish = currentTime;
-        // publishSensorData(); // Commented out - no MQTT
-        Serial.println("MQTT publish skipped - no connection");
-    }
+    // 4. MQTT publishing - SKIPPED
     
     // 5. Salvar dados em CSV (cada minuto)
     if (currentTime - lastCsvSave >= 60000) {

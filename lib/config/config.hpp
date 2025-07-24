@@ -15,6 +15,8 @@ class ExtMEM;
 
 // LEDs
 #define LED_PIN PA5                 // LED principal
+#define LED_GREEN PC12              // LED verde (temperatura OK)
+#define LED_RED PC15                // LED vermelho (temperatura alta)
 #define LED_SENSOR1 PA8             // LED sensor 1
 #define LED_SENSOR2 PA9             // LED sensor 2  
 #define LED_SENSOR3 PA10            // LED sensor 3

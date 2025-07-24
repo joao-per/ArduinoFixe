@@ -167,12 +167,6 @@ public:
     void readAllSensors() {
         sensors_event_t event;
         
-        // Debug: Check if DHT object exists
-        if (!dht) {
-            logger->debug("ERROR: DHT object is NULL!");
-            return;
-        }
-        
         // Read physical DHT sensor
         dht->temperature().getEvent(&event);
         float baseTemp = event.temperature;
@@ -180,38 +174,17 @@ public:
         dht->humidity().getEvent(&event);
         float baseHum = event.relative_humidity;
         
-        // Debug: Show raw values with explicit NaN check
-        char rawMsg[150];
-        if (isnan(baseTemp) && isnan(baseHum)) {
-            sprintf(rawMsg, "Raw DHT - Temp: NaN, Hum: NaN (both invalid)");
-        } else if (isnan(baseTemp)) {
-            sprintf(rawMsg, "Raw DHT - Temp: NaN, Hum: %.2f (temp invalid)", baseHum);
-        } else if (isnan(baseHum)) {
-            sprintf(rawMsg, "Raw DHT - Temp: %.2f, Hum: NaN (hum invalid)", baseTemp);
-        } else {
-            char tempStr[10], humStr[10];
-            dtostrf(baseTemp, 4, 2, tempStr);
-            dtostrf(baseHum, 4, 2, humStr);
-            sprintf(rawMsg, "Raw DHT - Temp: %s, Hum: %s (both valid)", tempStr, humStr);
-        }
-        logger->debug(rawMsg);
-        
         // Check if readings are valid
         if (isnan(baseTemp) || isnan(baseHum)) {
-            logger->debug("DHT Status - Temp: FAIL, Hum: FAIL");
             logger->error("Failed to read from DHT sensor!");
             return;
         }
-        
-        logger->debug("DHT readings are valid, creating virtual sensors...");
         
         // T1 = Real DHT reading 
         sensors[0].temperature = baseTemp;
         sensors[0].humidity = baseHum;
         sensors[0].state = SENSOR_OK;
         sensors[0].lastUpdate = millis();
-        
-        logger->debug("T1 sensor created, generating T2/T3/T4...");
         
         // T2, T3, T4 = Derived from T1 with small variations
         for (uint8_t i = 1; i < NUM_VIRTUAL_SENSORS; i++) {
@@ -225,39 +198,16 @@ public:
             sensors[i].humidity = constrain(sensors[i].humidity, 0, 100);
         }
         
-        logger->debug("All virtual sensors created, calculating median...");
-        
-        // Calculate median from all 4 sensors
-        float temps[NUM_VIRTUAL_SENSORS];
-        for (uint8_t i = 0; i < NUM_VIRTUAL_SENSORS; i++) {
-            temps[i] = sensors[i].temperature;
-        }
-        for (int i = 0; i < NUM_VIRTUAL_SENSORS-1; i++) {
-            for (int j = i+1; j < NUM_VIRTUAL_SENSORS; j++) {
-                if (temps[i] > temps[j]) {
-                    float temp = temps[i];
-                    temps[i] = temps[j];
-                    temps[j] = temp;
-                }
-            }
-        }
-        float medianTemp = (temps[1] + temps[2]) / 2.0;
-        
-        logger->debug("About to display final sensor values...");
-        
-        // Log individual sensors and median using dtostrf (more reliable for STM32)
-        char t1[10], t2[10], t3[10], t4[10], med[10];
+        // Log individual sensors using dtostrf
+        char t1[10], t2[10], t3[10], t4[10];
         dtostrf(sensors[0].temperature, 4, 1, t1);
         dtostrf(sensors[1].temperature, 4, 1, t2);
         dtostrf(sensors[2].temperature, 4, 1, t3);
         dtostrf(sensors[3].temperature, 4, 1, t4);
-        dtostrf(medianTemp, 4, 1, med);
         
         char msg[200];
-        sprintf(msg, "Sensors: T1=%s°C T2=%s°C T3=%s°C T4=%s°C | Median=%s°C", t1, t2, t3, t4, med);
+        sprintf(msg, "Sensors: T1=%s°C T2=%s°C T3=%s°C T4=%s°C", t1, t2, t3, t4);
         logger->debug(msg);
-        
-        logger->debug("Finished displaying sensor values!");
     }
     
     // Obter dados de um sensor específico
