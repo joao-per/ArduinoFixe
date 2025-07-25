@@ -457,7 +457,7 @@ void setup() {
     if (sdCardAvailable) {
         // Initialize LOG file
         logs.initFile("log");
-        Serial.println("   ✓ Log file initialized");
+        Serial.println("Log file initialized");
         
         // Initialize CSV file directly
         extern SdFat sd;
@@ -467,25 +467,25 @@ void setup() {
         if (file.open(csvFilename, O_RDWR | O_CREAT | O_APPEND)) {
             file.println(CSV_HEADER);
             file.close();
-            Serial.print("   ✓ CSV file created: ");
+            Serial.print("CSV file created: ");
             Serial.println(csvFilename);
         } else {
-            Serial.println("   ✗ CSV file creation failed!");
+            Serial.println("CSV file creation failed!");
         }
         
         // asn.readSN(); // Commented out - no config.json file available
-        Serial.println("   ✓ SD Card OK (config file skipped)");
+        Serial.println("SD Card OK (config file skipped)");
     } else {
-        Serial.println("   ✗ SD Card failed!");
+        Serial.println("✗ SD Card failed!");
     }
     
     // 4. Inicializar RTC
     Serial.println("4. Initializing RTC...");
     if (initRTC()) {
-        Serial.println("   ✓ RTC OK");
+        Serial.println("RTC OK");
         setRTCToCompileTime(); // Set RTC to compilation time (closest to real time)
     } else {
-        Serial.println("   ✗ RTC failed!");
+        Serial.println("RTC failed!");
     }
     
     // 5. Inicializar WiFi
@@ -504,7 +504,7 @@ void setup() {
     Serial.println("7. Initializing sensors...");
     dht.begin();
     sensorManager = new SensorManager(&dht, &logs, &csv);
-    Serial.println("   ✓ DHT11 initialized");
+    Serial.println("DHT11 initialized");
     
     // 8. Inicializar sistema de controlo
     Serial.println("8. Initializing control system...");
@@ -515,13 +515,13 @@ void setup() {
     interruptManager = new InterruptManager(&logs);
     interruptManager->setupHardwareInterrupts();
     interruptManager->setupTimerInterrupt();
-    Serial.println("   ✓ Interrupts configured");
+    Serial.println("Interrupts configured");
     
     // Log de início
     logs.info("System initialization complete");
     systemInitialized = true;
     
-    Serial.println("\n✓ System ready!\n");
+    Serial.println("\nSystem ready!\n");
     delay(1000);
 
 }
