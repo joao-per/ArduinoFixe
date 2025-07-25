@@ -118,6 +118,44 @@ void saveCSVData() {
     }
 }
 
+// Read and display CSV file contents
+void displayCSVContents() {
+    extern SdFat sd;
+    extern SdFile file;
+    
+    if (!sdCardAvailable) {
+        Serial.println("SD card not available");
+        return;
+    }
+    
+    Serial.println("=== CSV FILE CONTENTS ===");
+    
+    if (file.open(csvFilename, O_READ)) {
+        int lineCount = 0;
+        char line[200];
+        
+        while (file.fgets(line, sizeof(line)) && lineCount < 20) { // Show max 20 lines
+            Serial.print("Line ");
+            Serial.print(lineCount + 1);
+            Serial.print(": ");
+            Serial.print(line);
+            lineCount++;
+        }
+        
+        if (lineCount >= 20) {
+            Serial.println("... (showing first 20 lines only)");
+        }
+        
+        file.close();
+        Serial.print("Total lines displayed: ");
+        Serial.println(lineCount);
+    } else {
+        Serial.println("Failed to open CSV file for reading");
+    }
+    
+    Serial.println("=== END CSV CONTENTS ===");
+}
+
 // Test pin availability
 void testPin(int pin, const char* pinName) {
     Serial.print("Testing pin ");
@@ -520,6 +558,9 @@ void loop() {
                 root.close();
             }
             Serial.println("=== END FILE LIST ===");
+            
+            // Also display CSV contents every 30 seconds
+            displayCSVContents();
         }
         
         // Log periódico
