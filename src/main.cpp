@@ -101,7 +101,7 @@ void testRedLedPins() {
     
     // Test PC15 first (current config)
     Serial.println("Testing PC15 (current RED LED pin):");
-    testPin(LED_TEMP_RED, "LED_TEMP_RED (PC15)");
+    testPin(LED_TEMP_RED, "LED_TEMP_RED (PB2)");
     
     // Test some safe alternative pins
     Serial.println("Testing alternative pins:");
@@ -124,7 +124,7 @@ void initializeLEDs() {
     pinMode(LED_TEMP_RED, OUTPUT);
     digitalWrite(LED_TEMP_GREEN, HIGH);  // HIGH = OFF for these LEDs
     digitalWrite(LED_TEMP_RED, HIGH);    // HIGH = OFF for these LEDs
-    Serial.println("   Temperature LEDs (PC12, PC15) initialized - INVERTED LOGIC");
+    Serial.println("   Temperature LEDs (PC12=GREEN, PB2=RED) initialized - INVERTED LOGIC");
     
     ledStatus.init(LED_PIN);
     ledSensor1.init(LED_SENSOR1);
@@ -220,7 +220,6 @@ void updateLEDs() {
         // Only update LEDs if we have a valid temperature reading (not 0.0)
         if (avgTemp > 0.0) {
             if (avgTemp >= 30.0) {
-                Serial.println("LED CONTROL: Setting RED ON, GREEN OFF");
                 digitalWrite(LED_TEMP_GREEN, HIGH);  // HIGH = GREEN OFF (inverted)
                 digitalWrite(LED_TEMP_RED, LOW);     // LOW = RED ON (inverted)
                 if (!wasAbove30) {
@@ -228,7 +227,6 @@ void updateLEDs() {
                     wasAbove30 = true;
                 }
             } else {
-                Serial.println("LED CONTROL: Setting GREEN ON, RED OFF");
                 digitalWrite(LED_TEMP_GREEN, LOW);   // LOW = GREEN ON (inverted)
                 digitalWrite(LED_TEMP_RED, HIGH);    // HIGH = RED OFF (inverted)
                 if (wasAbove30) {
