@@ -79,6 +79,86 @@ configData config_data = {0};
 
 // ========== FUNÇÕES AUXILIARES ==========
 
+// Test pin availability
+void testPin(int pin, const char* pinName) {
+    Serial.print("Testing pin ");
+    Serial.print(pinName);
+    Serial.print(": ");
+    
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, LOW);
+    delay(100);
+    digitalWrite(pin, HIGH);
+    delay(100);
+    digitalWrite(pin, LOW);
+    
+    Serial.println("OK");
+}
+
+// Scan available pins
+void scanPins() {
+    Serial.println("=== PIN SCAN START ===");
+    
+    // Port A pins
+    Serial.println("Port A pins:");
+    testPin(PA0, "PA0");
+    testPin(PA1, "PA1");
+    testPin(PA2, "PA2");
+    testPin(PA3, "PA3");
+    testPin(PA4, "PA4");
+    testPin(PA5, "PA5");
+    testPin(PA6, "PA6");
+    testPin(PA7, "PA7");
+    testPin(PA8, "PA8");
+    testPin(PA9, "PA9");
+    testPin(PA10, "PA10");
+    testPin(PA11, "PA11");
+    testPin(PA12, "PA12");
+    testPin(PA13, "PA13");
+    testPin(PA14, "PA14");
+    testPin(PA15, "PA15");
+    
+    // Port B pins
+    Serial.println("Port B pins:");
+    testPin(PB0, "PB0");
+    testPin(PB1, "PB1");
+    testPin(PB2, "PB2");
+    testPin(PB3, "PB3");
+    testPin(PB4, "PB4");
+    testPin(PB5, "PB5");
+    testPin(PB6, "PB6");
+    testPin(PB7, "PB7");
+    testPin(PB8, "PB8");
+    testPin(PB9, "PB9");
+    testPin(PB10, "PB10");
+    testPin(PB11, "PB11");
+    testPin(PB12, "PB12");
+    testPin(PB13, "PB13");
+    testPin(PB14, "PB14");
+    testPin(PB15, "PB15");
+    
+    // Port C pins
+    Serial.println("Port C pins:");
+    testPin(PC0, "PC0");
+    testPin(PC1, "PC1");
+    testPin(PC2, "PC2");
+    testPin(PC3, "PC3");
+    testPin(PC4, "PC4");
+    testPin(PC5, "PC5");
+    testPin(PC6, "PC6");
+    testPin(PC7, "PC7");
+    testPin(PC8, "PC8");
+    testPin(PC9, "PC9");
+    testPin(PC10, "PC10");
+    testPin(PC11, "PC11");
+    testPin(PC12, "PC12");
+    testPin(PC13, "PC13");
+    testPin(PC14, "PC14");
+    testPin(PC15, "PC15");
+    
+    Serial.println("=== PIN SCAN COMPLETE ===");
+}
+
 // Inicializar todos os LEDs
 void initializeLEDs() {
     Serial.println("   Initializing LEDs...");
@@ -312,12 +392,16 @@ void setup() {
     Serial.println("   Sala de Máquinas - STM32L476RG");
     Serial.println("========================================\n");
     
-    // 1. Inicializar LEDs
-    Serial.println("1. Initializing LEDs...");
+    // 1. Scan all pins first
+    Serial.println("1. Scanning all pins...");
+    scanPins();
+    
+    // 2. Inicializar LEDs
+    Serial.println("2. Initializing LEDs...");
     initializeLEDs();
     
-    // 2. Inicializar SD Card
-    Serial.println("2. Initializing SD Card...");
+    // 3. Inicializar SD Card
+    Serial.println("3. Initializing SD Card...");
     sdCardAvailable = logs.initExtMem();
     if (sdCardAvailable) {
         logs.initFile("log");
@@ -329,8 +413,8 @@ void setup() {
         Serial.println("   ✗ SD Card failed!");
     }
     
-    // 3. Inicializar RTC
-    Serial.println("3. Initializing RTC...");
+    // 4. Inicializar RTC
+    Serial.println("4. Initializing RTC...");
     if (initRTC()) {
         Serial.println("   ✓ RTC OK");
         setRTCToCompileTime(); // Set RTC to compilation time (closest to real time)
@@ -338,8 +422,8 @@ void setup() {
         Serial.println("   ✗ RTC failed!");
     }
     
-    // 4. WiFi/MQTT - SKIPPED
-    Serial.println("4. WiFi/MQTT initialization - SKIPPED");
+    // 5. WiFi/MQTT - SKIPPED
+    Serial.println("5. WiFi/MQTT initialization - SKIPPED");
     wifiConnected = false;
     mqttConnected = false;
     
