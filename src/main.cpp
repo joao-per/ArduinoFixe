@@ -101,7 +101,7 @@ void testRedLedPins() {
     
     // Test PC15 first (current config)
     Serial.println("Testing PC15 (current RED LED pin):");
-    testPin(PC15, "PC15");
+    testPin(LED_TEMP_RED, "LED_TEMP_RED (PC15)");
     
     // Test some safe alternative pins
     Serial.println("Testing alternative pins:");
@@ -120,10 +120,10 @@ void initializeLEDs() {
     Serial.println("   Initializing LEDs...");
     
     // Initialize with direct pin control for temperature LEDs (INVERTED LOGIC)
-    pinMode(LED_GREEN, OUTPUT);
-    pinMode(LED_RED, OUTPUT);
-    digitalWrite(LED_GREEN, HIGH);  // HIGH = OFF for these LEDs
-    digitalWrite(LED_RED, HIGH);    // HIGH = OFF for these LEDs
+    pinMode(LED_TEMP_GREEN, OUTPUT);
+    pinMode(LED_TEMP_RED, OUTPUT);
+    digitalWrite(LED_TEMP_GREEN, HIGH);  // HIGH = OFF for these LEDs
+    digitalWrite(LED_TEMP_RED, HIGH);    // HIGH = OFF for these LEDs
     Serial.println("   Temperature LEDs (PC12, PC15) initialized - INVERTED LOGIC");
     
     ledStatus.init(LED_PIN);
@@ -139,10 +139,10 @@ void initializeLEDs() {
     Serial.println("   GREEN LED (PC12) test:");
     for (int i = 0; i < 3; i++) {
         Serial.println("     GREEN ON");
-        digitalWrite(LED_GREEN, LOW);   // LOW = ON (inverted)
+        digitalWrite(LED_TEMP_GREEN, LOW);   // LOW = ON (inverted)
         delay(500);
         Serial.println("     GREEN OFF");
-        digitalWrite(LED_GREEN, HIGH);  // HIGH = OFF (inverted)
+        digitalWrite(LED_TEMP_GREEN, HIGH);  // HIGH = OFF (inverted)
         delay(500);
     }
     
@@ -152,10 +152,10 @@ void initializeLEDs() {
     Serial.println("   Test 1: LOW = ON, HIGH = OFF");
     for (int i = 0; i < 2; i++) {
         Serial.println("     RED LOW (should be ON)");
-        digitalWrite(LED_RED, LOW);
+        digitalWrite(LED_TEMP_RED, LOW);
         delay(1000);
         Serial.println("     RED HIGH (should be OFF)");
-        digitalWrite(LED_RED, HIGH);
+        digitalWrite(LED_TEMP_RED, HIGH);
         delay(1000);
     }
     
@@ -163,18 +163,18 @@ void initializeLEDs() {
     Serial.println("   Test 2: HIGH = ON, LOW = OFF");
     for (int i = 0; i < 2; i++) {
         Serial.println("     RED HIGH (trying ON)");
-        digitalWrite(LED_RED, HIGH);
+        digitalWrite(LED_TEMP_RED, HIGH);
         delay(1000);
         Serial.println("     RED LOW (trying OFF)");
-        digitalWrite(LED_RED, LOW);
+        digitalWrite(LED_TEMP_RED, LOW);
         delay(1000);
     }
     
     Serial.println("   RED LED test complete - did you see any red light?");
     
     // Set initial state - GREEN ON (temperature assumed <30°C at startup)
-    digitalWrite(LED_GREEN, LOW);   // LOW = GREEN ON
-    digitalWrite(LED_RED, HIGH);    // HIGH = RED OFF
+    digitalWrite(LED_TEMP_GREEN, LOW);   // LOW = GREEN ON
+    digitalWrite(LED_TEMP_RED, HIGH);    // HIGH = RED OFF
     Serial.println("   LED initialization complete - GREEN LED should be ON");
 }
 
@@ -197,16 +197,16 @@ void updateLEDs() {
         if (avgTemp > 0.0) {
             if (avgTemp >= 30.0) {
                 Serial.println("LED CONTROL: Setting RED ON, GREEN OFF");
-                digitalWrite(LED_GREEN, HIGH);  // HIGH = GREEN OFF (inverted)
-                digitalWrite(LED_RED, LOW);     // LOW = RED ON (inverted)
+                digitalWrite(LED_TEMP_GREEN, HIGH);  // HIGH = GREEN OFF (inverted)
+                digitalWrite(LED_TEMP_RED, LOW);     // LOW = RED ON (inverted)
                 if (!wasAbove30) {
                     logs.warning("Temperature WARNING: reached 30°C or above");
                     wasAbove30 = true;
                 }
             } else {
                 Serial.println("LED CONTROL: Setting GREEN ON, RED OFF");
-                digitalWrite(LED_GREEN, LOW);   // LOW = GREEN ON (inverted)
-                digitalWrite(LED_RED, HIGH);    // HIGH = RED OFF (inverted)
+                digitalWrite(LED_TEMP_GREEN, LOW);   // LOW = GREEN ON (inverted)
+                digitalWrite(LED_TEMP_RED, HIGH);    // HIGH = RED OFF (inverted)
                 if (wasAbove30) {
                     logs.info("Temperature back to normal (<30°C)");
                     wasAbove30 = false;
