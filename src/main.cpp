@@ -95,68 +95,24 @@ void testPin(int pin, const char* pinName) {
     Serial.println("OK");
 }
 
-// Scan available pins
-void scanPins() {
-    Serial.println("=== PIN SCAN START ===");
+// Test only safe pins for RED LED
+void testRedLedPins() {
+    Serial.println("=== TESTING POTENTIAL RED LED PINS ===");
     
-    // Port A pins
-    Serial.println("Port A pins:");
-    testPin(PA0, "PA0");
-    testPin(PA1, "PA1");
-    testPin(PA2, "PA2");
-    testPin(PA3, "PA3");
-    testPin(PA4, "PA4");
-    testPin(PA5, "PA5");
-    testPin(PA6, "PA6");
-    testPin(PA7, "PA7");
-    testPin(PA8, "PA8");
-    testPin(PA9, "PA9");
-    testPin(PA10, "PA10");
-    testPin(PA11, "PA11");
-    testPin(PA12, "PA12");
-    testPin(PA13, "PA13");
-    testPin(PA14, "PA14");
-    testPin(PA15, "PA15");
+    // Test PC15 first (current config)
+    Serial.println("Testing PC15 (current RED LED pin):");
+    testPin(PC15, "PC15");
     
-    // Port B pins
-    Serial.println("Port B pins:");
-    testPin(PB0, "PB0");
-    testPin(PB1, "PB1");
+    // Test some safe alternative pins
+    Serial.println("Testing alternative pins:");
+    testPin(PC14, "PC14");
+    testPin(PC13, "PC13");
     testPin(PB2, "PB2");
     testPin(PB3, "PB3");
     testPin(PB4, "PB4");
     testPin(PB5, "PB5");
-    testPin(PB6, "PB6");
-    testPin(PB7, "PB7");
-    testPin(PB8, "PB8");
-    testPin(PB9, "PB9");
-    testPin(PB10, "PB10");
-    testPin(PB11, "PB11");
-    testPin(PB12, "PB12");
-    testPin(PB13, "PB13");
-    testPin(PB14, "PB14");
-    testPin(PB15, "PB15");
     
-    // Port C pins
-    Serial.println("Port C pins:");
-    testPin(PC0, "PC0");
-    testPin(PC1, "PC1");
-    testPin(PC2, "PC2");
-    testPin(PC3, "PC3");
-    testPin(PC4, "PC4");
-    testPin(PC5, "PC5");
-    testPin(PC6, "PC6");
-    testPin(PC7, "PC7");
-    testPin(PC8, "PC8");
-    testPin(PC9, "PC9");
-    testPin(PC10, "PC10");
-    testPin(PC11, "PC11");
-    testPin(PC12, "PC12");
-    testPin(PC13, "PC13");
-    testPin(PC14, "PC14");
-    testPin(PC15, "PC15");
-    
-    Serial.println("=== PIN SCAN COMPLETE ===");
+    Serial.println("=== RED LED PIN TEST COMPLETE ===");
 }
 
 // Inicializar todos os LEDs
@@ -392,9 +348,9 @@ void setup() {
     Serial.println("   Sala de Máquinas - STM32L476RG");
     Serial.println("========================================\n");
     
-    // 1. Scan all pins first
-    Serial.println("1. Scanning all pins...");
-    scanPins();
+    // 1. Test RED LED pins first
+    Serial.println("1. Testing RED LED pins...");
+    testRedLedPins();
     
     // 2. Inicializar LEDs
     Serial.println("2. Initializing LEDs...");
