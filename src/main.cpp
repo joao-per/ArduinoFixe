@@ -124,7 +124,7 @@ void initializeLEDs() {
     pinMode(LED_TEMP_RED, OUTPUT);
     digitalWrite(LED_TEMP_GREEN, HIGH);  // HIGH = OFF for these LEDs
     digitalWrite(LED_TEMP_RED, HIGH);    // HIGH = OFF for these LEDs
-    Serial.println("   Temperature LEDs (PC12=GREEN, PB2=RED) initialized - INVERTED LOGIC");
+    Serial.println("   Bicolor LED (PC12=GREEN, PC15=RED) initialized - TESTING ALL COMBINATIONS");
     
     ledStatus.init(LED_PIN);
     ledSensor1.init(LED_SENSOR1);
@@ -146,55 +146,33 @@ void initializeLEDs() {
         delay(500);
     }
     
-    Serial.println("=== COMPREHENSIVE LED COLOR TEST ===");
+    Serial.println("=== BICOLOR LED TEST - All possible combinations ===");
     
-    // Test PC12 for RED color
-    Serial.println("Testing PC12 (currently GREEN) for RED color:");
-    Serial.println("PC12 HIGH (looking for RED)");
-    digitalWrite(LED_TEMP_GREEN, HIGH);
-    digitalWrite(LED_TEMP_RED, LOW);  // Turn off PC15
-    delay(2000);
-    
-    Serial.println("PC12 LOW (looking for RED)");
-    digitalWrite(LED_TEMP_GREEN, LOW);
-    digitalWrite(LED_TEMP_RED, LOW);  // Turn off PC15
-    delay(2000);
-    
-    // Test PC15 for ANY color
-    Serial.println("Testing PC15 (currently RED) for ANY color:");
-    Serial.println("PC15 HIGH (looking for ANY light)");
-    digitalWrite(LED_TEMP_GREEN, HIGH);  // Turn off PC12
-    digitalWrite(LED_TEMP_RED, HIGH);
-    delay(2000);
-    
-    Serial.println("PC15 LOW (looking for ANY light)");
-    digitalWrite(LED_TEMP_GREEN, HIGH);  // Turn off PC12
-    digitalWrite(LED_TEMP_RED, LOW);
-    delay(2000);
-    
-    // Test both pins together
-    Serial.println("Testing BOTH pins together:");
-    Serial.println("BOTH HIGH");
+    // OFF state
+    Serial.println("1. LED OFF: PC12=HIGH, PC15=HIGH");
     digitalWrite(LED_TEMP_GREEN, HIGH);
     digitalWrite(LED_TEMP_RED, HIGH);
-    delay(2000);
+    delay(3000);
     
-    Serial.println("BOTH LOW");
-    digitalWrite(LED_TEMP_GREEN, LOW);
-    digitalWrite(LED_TEMP_RED, LOW);
-    delay(2000);
-    
-    Serial.println("PC12=HIGH, PC15=LOW");
-    digitalWrite(LED_TEMP_GREEN, HIGH);
-    digitalWrite(LED_TEMP_RED, LOW);
-    delay(2000);
-    
-    Serial.println("PC12=LOW, PC15=HIGH");
+    // GREEN only
+    Serial.println("2. GREEN ONLY: PC12=LOW, PC15=HIGH");
     digitalWrite(LED_TEMP_GREEN, LOW);
     digitalWrite(LED_TEMP_RED, HIGH);
-    delay(2000);
+    delay(3000);
     
-    Serial.println("=== LED TEST COMPLETE - Tell me what colors you saw! ===");
+    // RED only (attempt 1)
+    Serial.println("3. RED ATTEMPT 1: PC12=HIGH, PC15=LOW");
+    digitalWrite(LED_TEMP_GREEN, HIGH);
+    digitalWrite(LED_TEMP_RED, LOW);
+    delay(3000);
+    
+    // Both LOW (might be RED or mixed)
+    Serial.println("4. BOTH LOW: PC12=LOW, PC15=LOW");
+    digitalWrite(LED_TEMP_GREEN, LOW);
+    digitalWrite(LED_TEMP_RED, LOW);
+    delay(3000);
+    
+    Serial.println("=== Which of these 4 states showed RED color? ===");
     
     // Set initial state - GREEN ON (temperature assumed <30°C at startup)
     digitalWrite(LED_TEMP_GREEN, LOW);   // LOW = GREEN ON
@@ -385,6 +363,7 @@ void setup() {
         logs.initFile("log");
         csv.initFile("csv");
         csv.data(CSV_HEADER);
+        Serial.println("   ✓ CSV file initialized with header");
         // asn.readSN(); // Commented out - no config.json file available
         Serial.println("   ✓ SD Card OK (config file skipped)");
     } else {
@@ -454,10 +433,41 @@ void loop() {
     
     // 4. MQTT publishing - SKIPPED
     
-    // 5. Salvar dados em CSV (cada minuto)
-    if (currentTime - lastCsvSave >= 60000) {
+    // 5. Salvar dados em CSV (cada 6 segundos)
+    if (currentTime - lastCsvSave >= 6000) {
         lastCsvSave = currentTime;
+        
+        Serial.println("=== SAVING CSV DATA ===");
         sensorManager->saveToCSV();
+        Serial.println("CSV data saved");
+        
+        // List SD card files every 30 seconds
+        static unsigned long lastFileList = 0;
+        if (currentTime - lastFileList >= 30000) {
+            lastFileList = currentTime;
+            Serial.println("=== SD CARD FILES ===");
+            
+            // List files on SD card
+            SdFile root;
+            if (root.open("/")) {
+                Serial.println("Files on SD card:");
+                while (true) {
+                    SdFile entry;
+                    if (!entry.openNext(&root, O_READ)) break;
+                    
+                    char name[64];
+                    entry.getName(name, sizeof(name));
+                    Serial.print("  ");
+                    Serial.print(name);
+                    Serial.print(" (");
+                    Serial.print(entry.fileSize());
+                    Serial.println(" bytes)");
+                    entry.close();
+                }
+                root.close();
+            }
+            Serial.println("=== END FILE LIST ===");
+        }
         
         // Log periódico
         char logMsg[150];
