@@ -108,7 +108,11 @@ void initializeLEDs() {
         digitalWrite(LED_RED, LOW);
         delay(300);
     }
-    Serial.println("   LED test complete");
+    
+    // Set initial state - GREEN ON (temperature assumed <30°C at startup)
+    digitalWrite(LED_GREEN, HIGH);
+    digitalWrite(LED_RED, LOW);
+    Serial.println("   LED test complete - GREEN LED ON by default");
 }
 
 // Atualizar LEDs baseado no estado do sistema
@@ -121,23 +125,30 @@ void updateLEDs() {
     }
     
     // LEDs de temperatura (verde <30°C, vermelho >=30°C) - Direct pin control
-    float avgTemp = sensorManager->getAverageTemperature();
-    static bool wasAbove30 = false;
-    
-    if (avgTemp >= 30.0) {
-        digitalWrite(LED_GREEN, LOW);
-        digitalWrite(LED_RED, HIGH);
-        if (!wasAbove30) {
-            logs.warning("Temperature WARNING: reached 30°C or above");
-            wasAbove30 = true;
+    // Only update if system is initialized and we have valid temperature readings
+    if (systemInitialized) {
+        float avgTemp = sensorManager->getAverageTemperature();
+        static bool wasAbove30 = false;
+        
+        // Only update LEDs if we have a valid temperature reading (not 0.0)
+        if (avgTemp > 0.0) {
+            if (avgTemp >= 30.0) {
+                digitalWrite(LED_GREEN, LOW);
+                digitalWrite(LED_RED, HIGH);
+                if (!wasAbove30) {
+                    logs.warning("Temperature WARNING: reached 30°C or above");
+                    wasAbove30 = true;
+                }
+            } else {
+                digitalWrite(LED_GREEN, HIGH);
+                digitalWrite(LED_RED, LOW);
+                if (wasAbove30) {
+                    logs.info("Temperature back to normal (<30°C)");
+                    wasAbove30 = false;
+                }
+            }
         }
-    } else {
-        digitalWrite(LED_GREEN, HIGH);
-        digitalWrite(LED_RED, LOW);
-        if (wasAbove30) {
-            logs.info("Temperature back to normal (<30°C)");
-            wasAbove30 = false;
-        }
+        // If avgTemp is 0.0 (no valid reading yet), keep GREEN LED on
     }
     
     // LEDs dos sensores
