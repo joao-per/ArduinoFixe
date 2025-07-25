@@ -77,7 +77,46 @@ char msg_humidity[150];
 char time_string[20];
 configData config_data = {0};
 
+// CSV filename
+char csvFilename[30] = "temperatura0.csv";
+
 // ========== FUNÇÕES AUXILIARES ==========
+
+// Save CSV data directly to SD card
+void saveCSVData() {
+    extern SdFat sd;
+    extern SdFile file;
+    
+    if (!sdCardAvailable) return;
+    
+    // Get current sensors
+    auto sensors = sensorManager->getAllSensors();
+    
+    // Get timestamp
+    DateTime now = get_rtc_datetime();
+    char timestamp[30];
+    sprintf(timestamp, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+            now.year, now.month, now.day,
+            now.hours, now.minutes, now.seconds);
+    
+    // Write each sensor to CSV
+    if (file.open(csvFilename, O_RDWR | O_CREAT | O_APPEND)) {
+        for (const auto& sensor : sensors) {
+            char csvLine[150];
+            sprintf(csvLine, "%s,sensor%d,%s,%.1f",
+                    timestamp,
+                    sensor.id,
+                    sensor.state == SENSOR_OK ? "OK" : "NOK",
+                    sensor.temperature);
+            
+            file.println(csvLine);
+        }
+        file.close();
+        Serial.println("CSV data written to SD card");
+    } else {
+        Serial.println("Failed to open CSV file for writing");
+    }
+}
 
 // Test pin availability
 void testPin(int pin, const char* pinName) {
@@ -360,10 +399,24 @@ void setup() {
     Serial.println("3. Initializing SD Card...");
     sdCardAvailable = logs.initExtMem();
     if (sdCardAvailable) {
+        // Initialize LOG file
         logs.initFile("log");
-        csv.initFile("csv");
-        csv.data(CSV_HEADER);
-        Serial.println("   ✓ CSV file initialized with header");
+        Serial.println("   ✓ Log file initialized");
+        
+        // Initialize CSV file directly
+        extern SdFat sd;
+        extern SdFile file;
+        
+        // Create CSV file and write header
+        if (file.open(csvFilename, O_RDWR | O_CREAT | O_APPEND)) {
+            file.println(CSV_HEADER);
+            file.close();
+            Serial.print("   ✓ CSV file created: ");
+            Serial.println(csvFilename);
+        } else {
+            Serial.println("   ✗ CSV file creation failed!");
+        }
+        
         // asn.readSN(); // Commented out - no config.json file available
         Serial.println("   ✓ SD Card OK (config file skipped)");
     } else {
@@ -438,7 +491,7 @@ void loop() {
         lastCsvSave = currentTime;
         
         Serial.println("=== SAVING CSV DATA ===");
-        sensorManager->saveToCSV();
+        saveCSVData();
         Serial.println("CSV data saved");
         
         // List SD card files every 30 seconds
