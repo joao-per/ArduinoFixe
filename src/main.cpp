@@ -83,12 +83,12 @@ configData config_data = {0};
 void initializeLEDs() {
     Serial.println("   Initializing LEDs...");
     
-    // Initialize with direct pin control for temperature LEDs
+    // Initialize with direct pin control for temperature LEDs (INVERTED LOGIC)
     pinMode(LED_GREEN, OUTPUT);
     pinMode(LED_RED, OUTPUT);
-    digitalWrite(LED_GREEN, LOW);
-    digitalWrite(LED_RED, LOW);
-    Serial.println("   Temperature LEDs (PC12, PC15) initialized");
+    digitalWrite(LED_GREEN, HIGH);  // HIGH = OFF for these LEDs
+    digitalWrite(LED_RED, HIGH);    // HIGH = OFF for these LEDs
+    Serial.println("   Temperature LEDs (PC12, PC15) initialized - INVERTED LOGIC");
     
     ledStatus.init(LED_PIN);
     ledSensor1.init(LED_SENSOR1);
@@ -103,26 +103,26 @@ void initializeLEDs() {
     Serial.println("   GREEN LED (PC12) test:");
     for (int i = 0; i < 3; i++) {
         Serial.println("     GREEN ON");
-        digitalWrite(LED_GREEN, HIGH);
+        digitalWrite(LED_GREEN, LOW);   // LOW = ON (inverted)
         delay(500);
         Serial.println("     GREEN OFF");
-        digitalWrite(LED_GREEN, LOW);
+        digitalWrite(LED_GREEN, HIGH);  // HIGH = OFF (inverted)
         delay(500);
     }
     
     Serial.println("   RED LED (PC15) test:");
     for (int i = 0; i < 3; i++) {
         Serial.println("     RED ON");
-        digitalWrite(LED_RED, HIGH);
+        digitalWrite(LED_RED, LOW);     // LOW = ON (inverted)
         delay(500);
         Serial.println("     RED OFF");
-        digitalWrite(LED_RED, LOW);
+        digitalWrite(LED_RED, HIGH);    // HIGH = OFF (inverted)
         delay(500);
     }
     
     // Set initial state - GREEN ON (temperature assumed <30°C at startup)
-    digitalWrite(LED_GREEN, HIGH);
-    digitalWrite(LED_RED, LOW);
+    digitalWrite(LED_GREEN, LOW);   // LOW = GREEN ON
+    digitalWrite(LED_RED, HIGH);    // HIGH = RED OFF
     Serial.println("   LED initialization complete - GREEN LED should be ON");
 }
 
@@ -145,16 +145,16 @@ void updateLEDs() {
         if (avgTemp > 0.0) {
             if (avgTemp >= 30.0) {
                 Serial.println("LED CONTROL: Setting RED ON, GREEN OFF");
-                digitalWrite(LED_GREEN, LOW);
-                digitalWrite(LED_RED, HIGH);
+                digitalWrite(LED_GREEN, HIGH);  // HIGH = GREEN OFF (inverted)
+                digitalWrite(LED_RED, LOW);     // LOW = RED ON (inverted)
                 if (!wasAbove30) {
                     logs.warning("Temperature WARNING: reached 30°C or above");
                     wasAbove30 = true;
                 }
             } else {
                 Serial.println("LED CONTROL: Setting GREEN ON, RED OFF");
-                digitalWrite(LED_GREEN, HIGH);
-                digitalWrite(LED_RED, LOW);
+                digitalWrite(LED_GREEN, LOW);   // LOW = GREEN ON (inverted)
+                digitalWrite(LED_RED, HIGH);    // HIGH = RED OFF (inverted)
                 if (wasAbove30) {
                     logs.info("Temperature back to normal (<30°C)");
                     wasAbove30 = false;
