@@ -99,17 +99,35 @@ void saveCSVData() {
             now.year, now.month, now.day,
             now.hours, now.minutes, now.seconds);
     
+    // Debug: Check sensor values before writing
+    Serial.println("DEBUG: Sensor values before CSV write:");
+    for (const auto& sensor : sensors) {
+        Serial.print("  Sensor ");
+        Serial.print(sensor.id);
+        Serial.print(": temp=");
+        Serial.print(sensor.temperature);
+        Serial.print(", state=");
+        Serial.println(sensor.state == SENSOR_OK ? "OK" : "NOK");
+    }
+    
     // Write each sensor to CSV
     if (file.open(csvFilename, O_RDWR | O_CREAT | O_APPEND)) {
         for (const auto& sensor : sensors) {
             char csvLine[150];
-            sprintf(csvLine, "%s,sensor%d,%s,%.1f",
+            
+            // Use dtostrf for temperature like we do in sensor debug
+            char tempStr[10];
+            dtostrf(sensor.temperature, 4, 1, tempStr);
+            
+            sprintf(csvLine, "%s,sensor%d,%s,%s",
                     timestamp,
                     sensor.id,
                     sensor.state == SENSOR_OK ? "OK" : "NOK",
-                    sensor.temperature);
+                    tempStr);
             
             file.println(csvLine);
+            Serial.print("  Written: ");
+            Serial.println(csvLine);
         }
         file.close();
         Serial.println("CSV data written to SD card");
