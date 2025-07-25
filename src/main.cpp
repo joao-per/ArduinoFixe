@@ -100,19 +100,30 @@ void initializeLEDs() {
     
     // Teste inicial - piscar LEDs de temperatura
     Serial.println("   Testing temperature LEDs...");
+    Serial.println("   GREEN LED (PC12) test:");
     for (int i = 0; i < 3; i++) {
+        Serial.println("     GREEN ON");
         digitalWrite(LED_GREEN, HIGH);
-        digitalWrite(LED_RED, HIGH);
-        delay(300);
+        delay(500);
+        Serial.println("     GREEN OFF");
         digitalWrite(LED_GREEN, LOW);
+        delay(500);
+    }
+    
+    Serial.println("   RED LED (PC15) test:");
+    for (int i = 0; i < 3; i++) {
+        Serial.println("     RED ON");
+        digitalWrite(LED_RED, HIGH);
+        delay(500);
+        Serial.println("     RED OFF");
         digitalWrite(LED_RED, LOW);
-        delay(300);
+        delay(500);
     }
     
     // Set initial state - GREEN ON (temperature assumed <30°C at startup)
     digitalWrite(LED_GREEN, HIGH);
     digitalWrite(LED_RED, LOW);
-    Serial.println("   LED test complete - GREEN LED ON by default");
+    Serial.println("   LED initialization complete - GREEN LED should be ON");
 }
 
 // Atualizar LEDs baseado no estado do sistema
@@ -133,6 +144,7 @@ void updateLEDs() {
         // Only update LEDs if we have a valid temperature reading (not 0.0)
         if (avgTemp > 0.0) {
             if (avgTemp >= 30.0) {
+                Serial.println("LED CONTROL: Setting RED ON, GREEN OFF");
                 digitalWrite(LED_GREEN, LOW);
                 digitalWrite(LED_RED, HIGH);
                 if (!wasAbove30) {
@@ -140,6 +152,7 @@ void updateLEDs() {
                     wasAbove30 = true;
                 }
             } else {
+                Serial.println("LED CONTROL: Setting GREEN ON, RED OFF");
                 digitalWrite(LED_GREEN, HIGH);
                 digitalWrite(LED_RED, LOW);
                 if (wasAbove30) {
