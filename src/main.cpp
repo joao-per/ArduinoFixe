@@ -78,7 +78,7 @@ char time_string[20];
 configData config_data = {0};
 
 // CSV filename
-char csvFilename[30] = "temperatura0.csv";
+char csvFilename[30] = "Status.csv";
 
 // ========== FUNÇÕES AUXILIARES ==========
 
@@ -488,23 +488,30 @@ void setup() {
         Serial.println("   ✗ RTC failed!");
     }
     
-    // 5. WiFi/MQTT - SKIPPED
-    Serial.println("5. WiFi/MQTT initialization - SKIPPED");
-    wifiConnected = false;
-    mqttConnected = false;
+    // 5. Inicializar WiFi
+    Serial.println("5. Initializing WiFi...");
+    Serial1.begin(SERIAL_BAUD_RATE);
+    WiFi.init(Serial1);
+    connectWiFi();
+    wifiConnected = (WiFi.status() == WL_CONNECTED);
     
-    // 6. Inicializar sensores
-    Serial.println("6. Initializing sensors...");
+    // 6. Inicializar MQTT
+    Serial.println("6. Initializing MQTT...");
+    mqttClient.setCallback(mqttCallback);
+    connectMQTT();
+    
+    // 7. Inicializar sensores
+    Serial.println("7. Initializing sensors...");
     dht.begin();
     sensorManager = new SensorManager(&dht, &logs, &csv);
     Serial.println("   ✓ DHT11 initialized");
     
-    // 7. Inicializar sistema de controlo
-    Serial.println("7. Initializing control system...");
+    // 8. Inicializar sistema de controlo
+    Serial.println("8. Initializing control system...");
     systemControl = new SystemControl(&logs, &csv);
     
-    // 8. Inicializar interrupções
-    Serial.println("8. Initializing interrupts...");
+    // 9. Inicializar interrupções
+    Serial.println("9. Initializing interrupts...");
     interruptManager = new InterruptManager(&logs);
     interruptManager->setupHardwareInterrupts();
     interruptManager->setupTimerInterrupt();
@@ -523,7 +530,18 @@ void setup() {
 void loop() {
     unsigned long currentTime = millis();
     
-    // 1. Network connections - SKIPPED
+    // 1. Verificar conexões
+    if (WiFi.status() != WL_CONNECTED) {
+        wifiConnected = false;
+        connectWiFi();
+        wifiConnected = (WiFi.status() == WL_CONNECTED);
+    }
+    
+    if (!mqttClient.connected()) {
+        mqttConnected = false;
+        reconnectMQTT();
+    }
+    mqttClient.loop();
     
     // 2. Processar interrupções
     interruptManager->processInterrupts(systemControl);
@@ -540,7 +558,15 @@ void loop() {
         systemControl->processControl(avgTemp);
     }
     
-    // 4. MQTT publishing - SKIPPED
+    // 4. Publicar dados MQTT
+    if (currentTime - lastMqttPublish >= MQTT_PUBLISH_INTERVAL) {
+        lastMqttPublish = currentTime;
+        publishSensorData();
+        
+        // Publicar estado do sistema
+        mqttClient.publish(TOPIC_MODE, systemControl->getModeString().c_str());
+        mqttClient.publish(TOPIC_EMERGENCY, systemControl->isEmergency() ? "1" : "0");
+    }
     
     // 5. Salvar dados em CSV (cada 6 segundos)
     if (currentTime - lastCsvSave >= 6000) {
