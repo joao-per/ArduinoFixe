@@ -110,15 +110,31 @@ void initializeLEDs() {
         delay(500);
     }
     
-    Serial.println("   RED LED (PC15) test:");
-    for (int i = 0; i < 3; i++) {
-        Serial.println("     RED ON");
-        digitalWrite(LED_RED, LOW);     // LOW = ON (inverted)
-        delay(500);
-        Serial.println("     RED OFF");
-        digitalWrite(LED_RED, HIGH);    // HIGH = OFF (inverted)
-        delay(500);
+    Serial.println("   RED LED (PC15) test - EXTENSIVE TESTING:");
+    
+    // Test 1: Normal inverted logic (LOW = ON)
+    Serial.println("   Test 1: LOW = ON, HIGH = OFF");
+    for (int i = 0; i < 2; i++) {
+        Serial.println("     RED LOW (should be ON)");
+        digitalWrite(LED_RED, LOW);
+        delay(1000);
+        Serial.println("     RED HIGH (should be OFF)");
+        digitalWrite(LED_RED, HIGH);
+        delay(1000);
     }
+    
+    // Test 2: Try normal logic (HIGH = ON)
+    Serial.println("   Test 2: HIGH = ON, LOW = OFF");
+    for (int i = 0; i < 2; i++) {
+        Serial.println("     RED HIGH (trying ON)");
+        digitalWrite(LED_RED, HIGH);
+        delay(1000);
+        Serial.println("     RED LOW (trying OFF)");
+        digitalWrite(LED_RED, LOW);
+        delay(1000);
+    }
+    
+    Serial.println("   RED LED test complete - did you see any red light?");
     
     // Set initial state - GREEN ON (temperature assumed <30°C at startup)
     digitalWrite(LED_GREEN, LOW);   // LOW = GREEN ON
