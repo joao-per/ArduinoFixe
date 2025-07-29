@@ -27,30 +27,49 @@ public:
     void begin() {
         // Inicializar DHT a cada chamada
         if (!initialized) {
+            logger->info("Initializing DHT sensor...");
             dht->begin();
             initialized = true;
             delay(2000); // Delay inicial maior
+            logger->info("DHT initialized");
         }
         
         // Ler sensor
         sensors_event_t event;
         
+        // Ler temperatura
         dht->temperature().getEvent(&event);
         if (!isnan(event.temperature)) {
             temperature = event.temperature;
+            logger->debug("Temp read OK");
+        } else {
+            logger->debug("Temp read FAIL");
         }
         
+        // Ler humidade
         dht->humidity().getEvent(&event);
         if (!isnan(event.relative_humidity)) {
             humidity = event.relative_humidity;
+            logger->debug("Hum read OK");
+        } else {
+            logger->debug("Hum read FAIL");
         }
         
-        // Log
-        if (temperature > 0 && humidity > 0) {
-            char tempStr[10];
-            dtostrf(temperature, 4, 1, tempStr);
-            logger->debug(tempStr);
-        }
+        // Log sempre, mesmo com valores zero
+        char logMsg[100];
+        char tempStr[10];
+        char humStr[10];
+        dtostrf(temperature, 4, 1, tempStr);
+        dtostrf(humidity, 4, 1, humStr);
+        
+        // Criar mensagem estilo CSV para debug
+        String logLine = "Temp: ";
+        logLine += tempStr;
+        logLine += "C, Hum: ";
+        logLine += humStr;
+        logLine += "%";
+        
+        logger->info(logLine.c_str());
         
         delay(1000); // Delay após leitura como Grupo 2
     }

@@ -192,6 +192,11 @@ void setup() {
     logs.info("Sensor configured");
     
     logs.info("System ready!");
+    
+    // Forçar primeira leitura do sensor
+    delay(1000);
+    logs.info("First sensor reading...");
+    sensor.begin();
 }
 
 // Loop principal
@@ -224,6 +229,7 @@ void loop() {
     if (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL) {
         lastSensorRead = currentTime;
         
+        logs.debug("Reading sensor...");
         sensor.begin();
         
         // Atualizar LED temperatura
