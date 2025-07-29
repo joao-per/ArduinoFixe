@@ -69,15 +69,28 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
 // Reconectar MQTT
 void reconnectMQTT() {
-    while (!mqttClient.connected()) {
+    if (WiFi.status() != WL_CONNECTED) {
+        mqttConnected = false;
+        return;
+    }
+    
+    int tentativas = 0;
+    while (!mqttClient.connected() && tentativas < 3) {
         logs.info("Connecting to MQTT...");
         
         if (mqttClient.connect(MQTT_CLIENT_ID)) {
+            logs.info("MQTT connected!");
             mqttConnected = true;
+            mqttClient.publish(TOPIC_SYSTEM_LOG, "System started");
+            break;
         } else {
-            // MQTT falhou
+            logs.error("MQTT failed. Retrying...");
+            char rcStr[10];
+            itoa(mqttClient.state(), rcStr, 10);
+            logs.debug(rcStr);
             mqttConnected = false;
-            delay(5000);
+            tentativas++;
+            if (tentativas < 3) delay(2000);
         }
     }
 }
@@ -107,7 +120,7 @@ void publishSensorData() {
     // Publicar estado do SD
     mqttClient.publish(TOPIC_SD_STATUS, sdCardAvailable ? "OK" : "NOK");
     
-    // MQTT publicado
+    logs.debug("Published MQTT data");
 }
 
 // Setup
@@ -116,35 +129,42 @@ void setup() {
     Serial.begin(SERIAL_BAUD_RATE);
     delay(1000);
     
-    logs.info("Sistema de Arrefecimento STM32L476RG");
+    logs.info("========================================");
+    logs.info("   SISTEMA DE ARREFECIMENTO");
+    logs.info("   STM32L476RG");
+    logs.info("========================================");
     
-    // Inicializar LEDs
+    // 1. Inicializar LEDs
+    logs.info("1. Initializing LEDs...");
     ledStatus.init(LED_PIN);
     ledTemp.init(LED_TEMP_GREEN);
     ledWifi.init(LED_WIFI);
     ledSD.init(LED_SD);
     
-    // Inicializar SD Card
+    // 2. Inicializar SD Card
+    logs.info("2. Initializing SD Card...");
     sdCardAvailable = logs.initExtMem();
     if (sdCardAvailable) {
         logs.initFile("log");
         csv.initFile("csv");
         ledSD.on();
-        // SD OK
+        logs.info("SD Card OK");
     } else {
-        // SD falhou
+        logs.error("SD Card failed!");
         ledSD.off();
     }
     
-    // Inicializar RTC
+    // 3. Inicializar RTC
+    logs.info("3. Initializing RTC...");
     if (initRTC()) {
-        // RTC OK
+        logs.info("RTC OK");
         setRTCToCompileTime();
     } else {
-        // RTC falhou
+        logs.error("RTC failed!");
     }
     
-    // Inicializar WiFi
+    // 4. Inicializar WiFi
+    logs.info("4. Initializing WiFi...");
     Serial1.begin(SERIAL_BAUD_RATE);
     WiFi.init(Serial1);
     connectWiFi();
@@ -158,15 +178,22 @@ void setup() {
         }
     }
     
-    // Inicializar MQTT
-    mqttClient.setCallback(mqttCallback);
-    connectMQTT();
+    // 5. Inicializar MQTT
+    logs.info("5. Initializing MQTT...");
+    if (wifiConnected) {
+        mqttClient.setCallback(mqttCallback);
+        connectMQTT();
+    } else {
+        logs.warning("Skipping MQTT - No WiFi connection");
+    }
     
-    // Inicializar sensor
+    // 6. Inicializar sensor
+    logs.info("6. Initializing sensor...");
     dht.begin();
     sensor = new SimpleSensor(&dht, &logs);
+    logs.info("DHT11 initialized");
     
-    logs.info("Sistema pronto");
+    logs.info("System ready!");
     delay(1000);
 }
 

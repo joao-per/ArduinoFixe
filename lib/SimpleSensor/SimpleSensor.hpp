@@ -25,15 +25,23 @@ public:
         dht->temperature().getEvent(&event);
         if (!isnan(event.temperature)) {
             lastTemperature = event.temperature;
+        } else {
+            logger->error("Failed to read temperature from DHT sensor!");
         }
         
         // Ler humidade
         dht->humidity().getEvent(&event);
         if (!isnan(event.relative_humidity)) {
             lastHumidity = event.relative_humidity;
+        } else {
+            logger->error("Failed to read humidity from DHT sensor!");
         }
         
-        // Valores lidos
+        // Registar valores
+        logger->debug("Sensor reading completed");
+        char tempStr[10];
+        dtostrf(lastTemperature, 4, 1, tempStr);
+        logger->debug(tempStr);
     }
     
     float getTemperature() { return lastTemperature; }

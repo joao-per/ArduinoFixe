@@ -43,24 +43,37 @@ void connectWiFi()
 // Ligar MQTT
 void connectMQTT()
 {
+  if (WiFi.status() != WL_CONNECTED) {
+    logs.warning("Cannot connect MQTT - No WiFi");
+    return;
+  }
+  
   mqttClient.setServer(sv.get_ip(), sv.get_port());
   mqttClient.setCallback(callback);
 
-  while (!mqttClient.connected())
+  int tentativas = 0;
+  while (!mqttClient.connected() && tentativas < 3)
   {
-    // A ligar MQTT
+    logs.info("Connecting to MQTT...");
 
     String clientId = "STM32_RECEIVER_";
     clientId += String(random(0xffff), HEX);
 
     if (mqttClient.connect(clientId.c_str()))
     {
+      logs.info("MQTT connected!");
       mqttClient.subscribe("stm32/topic");
+      logs.info("Subscribed to stm32/topic");
+      break;
     }
     else
     {
-      // MQTT falhou
-      delay(2000);
+      logs.error("MQTT failed. Retrying...");
+      char rcStr[10];
+      itoa(mqttClient.state(), rcStr, 10);
+      logs.debug(rcStr);
+      tentativas++;
+      if (tentativas < 3) delay(2000);
     }
   }
 }
