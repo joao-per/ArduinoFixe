@@ -15,19 +15,9 @@ class ExtMEM;
 
 // LEDs
 #define LED_PIN PA5                 // LED principal
-#define LED_TEMP_GREEN PC12         // LED bicolor - pino GREEN
-#define LED_TEMP_RED PC15           // LED bicolor - pino RED (mesmo LED físico)
-#define LED_SENSOR1 PA8             // LED sensor 1
-#define LED_SENSOR2 PA9             // LED sensor 2  
-#define LED_SENSOR3 PA10            // LED sensor 3
-#define LED_SENSOR4 PA11            // LED sensor 4
+#define LED_TEMP_GREEN PC12         // LED temperatura verde
 #define LED_WIFI PB0                // LED estado WiFi
 #define LED_SD PB1                  // LED estado SD
-
-// Buttons
-#define BTN_USER PC13               // Botão USER da placa
-#define BTN_EMERGENCY PA0           // Botão emergência (externo)
-#define BTN_MODE PA1                // Botão modo (externo)
 
 // SPI for SD Card
 static constexpr int SCK_PIN = PA5;
@@ -40,13 +30,8 @@ static constexpr int uSD_CS_PIN = PB6;
 #define BUTTON_DEBOUNCE_DELAY 50    // milliseconds
 
 // ========== SYSTEM PARAMETERS ==========
-#define NUM_SENSORS 4               // Número de sensores (virtuais)
-#define NUM_READINGS 10             // Número de leituras para média
-#define SENSOR_READ_INTERVAL 2000   // ms entre debug output (every 2 seconds)
-#define PHYSICAL_READ_INTERVAL 100  // ms between physical sensor reads (10x per second)
+#define SENSOR_READ_INTERVAL 5000   // ms entre leituras
 #define MQTT_PUBLISH_INTERVAL 5000  // ms entre publicações
-#define DEFAULT_TEMP_MIN 20.0       // °C
-#define DEFAULT_TEMP_MAX 45.0       // °C
 
 // ========== WIFI & MQTT ==========
 #define SERVER_SSID "NOS_Internet_E345"
@@ -65,13 +50,7 @@ static constexpr int uSD_CS_PIN = PB6;
 #define TOPIC_SD_STATUS TOPIC_BASE "memoria/estado"
 #define TOPIC_SYSTEM_LOG TOPIC_BASE "sistema/log"
 
-// MQTT Topics - Subscrição
-#define TOPIC_SETPOINT_MIN TOPIC_BASE "config/temp_min"
-#define TOPIC_SETPOINT_MAX TOPIC_BASE "config/temp_max"
-#define TOPIC_INTERVAL TOPIC_BASE "config/intervalo"
-#define TOPIC_MODE TOPIC_BASE "controlo/modo"
-#define TOPIC_EMERGENCY TOPIC_BASE "controlo/emergencia"
-#define TOPIC_ACTUATOR_CMD TOPIC_BASE "controlo/atuadores"
+// Tópicos de controlo removidos
 
 // ========== FILES & LOGS ==========
 static const std::string CONFIG_FILENAME = "config.json";
@@ -85,15 +64,8 @@ static constexpr bool IS_SERIAL_PRINT = true;
 static constexpr bool IS_DEBUG_LOG = true;
 static constexpr uint32_t MAX_FILE_SIZE = 1048576; // 1MB
 
-// ========== TIMER CONFIG ==========
-#define TIME_FREQUENCY 1            // 1 Hz (1 segundo)
-#define PRESCALE_FACTOR 8000
-
 // ========== THRESHOLDS ==========
-#define TEMP_CRITICAL_HIGH 50.0     // °C - temperatura crítica
 #define TEMP_WARNING_HIGH 30.0      // °C - aviso de temperatura alta
-#define HUMIDITY_LOW 20.0           // % - humidade baixa
-#define HUMIDITY_HIGH 80.0          // % - humidade alta
 
 // ========== RTC ==========
 static constexpr bool SET_RTC_BOOT = true;
@@ -128,10 +100,6 @@ extern unsigned long currentMillis;
 extern unsigned long lastRead;
 extern const unsigned long interval;
 
-// Arrays para médias
-extern float tempReadings[NUM_READINGS];
-extern float humReadings[NUM_READINGS];
-extern int readingIndex;
-extern int readingCount;
+// Arrays removidos
 
 #endif // CONFIG_HPP

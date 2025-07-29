@@ -59,8 +59,7 @@ void setRTCToCompileTime()
 
     set_rtc_time(day, month , year, hour, minute, second);
 
-    Serial.printf("RTC set to compile time: %s %02d %04d %02d:%02d:%02d\n",
-                  day, monthStr, year, hour, minute, second);
+    // RTC configurado
 }
 
 void set_rtc_time(int year, int month, int day, int hour, int minute, int second)
