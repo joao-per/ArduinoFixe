@@ -12,7 +12,7 @@
 #include "LED.hpp"
 #include "connect.hpp"
 #include "logs.hpp"
-#include "SimpleSensor.hpp"
+#include "Sensor.hpp"
 #include "NTP.hpp"
 
 // UART ESP8266
@@ -23,8 +23,7 @@ ExtMEM logs;
 ExtMEM csv;
 
 // Sensor
-DHT_Unified dht(DHTPIN, DHTTYPE);
-SimpleSensor* sensor;
+Sensor sensor;
 
 // NTP
 NTPClient ntp;
@@ -102,18 +101,18 @@ void publishSensorData() {
     char payload[20];
     
     // Publicar temperatura
-    dtostrf(sensor->getTemperature(), 4, 1, payload);
+    dtostrf(sensor.getTemperature(), 4, 1, payload);
     mqttClient.publish(TOPIC_BASE "sensor1/temperatura", payload);
     
     // Publicar humidade
-    dtostrf(sensor->getHumidity(), 4, 1, payload);
+    dtostrf(sensor.getHumidity(), 4, 1, payload);
     mqttClient.publish(TOPIC_BASE "sensor1/humidade", payload);
     
     // Publicar estado
     String statusJson = "{\"sensor1\":{\"status\":\"OK\",\"temperatura\":";
-    statusJson += String(sensor->getTemperature(), 1);
+    statusJson += String(sensor.getTemperature(), 1);
     statusJson += ",\"humidade\":";
-    statusJson += String(sensor->getHumidity(), 1);
+    statusJson += String(sensor.getHumidity(), 1);
     statusJson += "}}";
     mqttClient.publish(TOPIC_SENSOR_STATUS, statusJson.c_str());
     
@@ -189,22 +188,10 @@ void setup() {
     
     // 6. Inicializar sensor
     logs.info("6. Initializing sensor...");
-    dht.begin();
-    delay(1000); // Dar tempo ao sensor para estabilizar
-    sensor = new SimpleSensor(&dht, &logs);
-    
-    // Teste inicial do sensor
-    sensor_t sensorInfo;
-    dht.temperature().getSensor(&sensorInfo);
-    logs.debug(sensorInfo.name);
-    logs.info("DHT11 initialized");
+    sensor.setLogger(&logs);
+    logs.info("Sensor configured");
     
     logs.info("System ready!");
-    
-    // Primeira leitura do sensor após 2 segundos
-    delay(2000);
-    sensor->readSensor();
-    logs.info("First sensor reading completed");
 }
 
 // Loop principal
@@ -237,17 +224,17 @@ void loop() {
     if (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL) {
         lastSensorRead = currentTime;
         
-        sensor->readSensor();
+        sensor.begin();
         
         // Atualizar LED temperatura
-        if (sensor->getTemperature() >= TEMP_WARNING_HIGH) {
+        if (sensor.getTemperature() >= TEMP_WARNING_HIGH) {
             ledTemp.off(); // LED verde apaga quando quente
         } else {
             ledTemp.on(); // LED verde aceso quando normal
         }
         
         // Guardar CSV
-        sensor->saveToCSV(&csv);
+        sensor.saveToCSV(&csv);
     }
     
     // Publicar MQTT
@@ -257,8 +244,6 @@ void loop() {
         
         // Atualização de estado
         logs.info("System status update");
-        char tempStr[10];
-        dtostrf(sensor->getTemperature(), 4, 1, tempStr);
-        logs.debug(tempStr);
+        logs.info("Sensor status OK");
     }
 }
