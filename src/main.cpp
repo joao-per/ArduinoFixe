@@ -12,7 +12,6 @@
 #include "LED.hpp"
 #include "connect.hpp"
 #include "logs.hpp"
-#include "Sensor.hpp"
 #include "NTP.hpp"
 
 // UART ESP8266
@@ -22,11 +21,8 @@ HardwareSerial Serial1(PA10, PA9);
 ExtMEM logs;
 ExtMEM csv;
 
-// Sensor
-Sensor sensor;
-
-// NTP
-NTPClient ntp;
+// DHT GLOBAL - COMO GRUPO 2!!!
+DHT_Unified dht(DHTPIN, DHTTYPE);
 
 // LEDs
 LED ledStatus;
@@ -38,6 +34,9 @@ LED ledSD;
 extern WiFiClient wifiClient;
 extern PubSubClient mqttClient;
 
+// NTP
+NTPClient ntp;
+
 // Temporização
 unsigned long lastSensorRead = 0;
 unsigned long lastMqttPublish = 0;
@@ -46,6 +45,10 @@ unsigned long lastMqttPublish = 0;
 bool sdCardAvailable = false;
 bool wifiConnected = false;
 bool mqttConnected = false;
+
+// Valores do sensor
+float temperature = 0.0;
+float humidity = 0.0;
 
 // Buffers
 char floatString_temperature[10];
@@ -94,6 +97,44 @@ void reconnectMQTT() {
     }
 }
 
+// Ler sensor - ESTILO GRUPO 2
+void readSensor() {
+    sensors_event_t event;
+    
+    // Temperatura
+    dht.temperature().getEvent(&event);
+    if (!isnan(event.temperature)) {
+        temperature = event.temperature;
+        
+        // Log estilo Grupo 2
+        dtostrf(temperature, 4, 1, floatString_temperature);
+        logs.debug(floatString_temperature);
+        
+        char msg[64];
+        String tempMsg = "Temperature = ";
+        tempMsg += floatString_temperature;
+        tempMsg += "C";
+        logs.info(tempMsg.c_str());
+    } else {
+        logs.error("Error reading temperature!");
+    }
+    
+    // Humidade
+    dht.humidity().getEvent(&event);
+    if (!isnan(event.relative_humidity)) {
+        humidity = event.relative_humidity;
+        
+        dtostrf(humidity, 4, 1, floatString_humidity);
+        
+        String humMsg = "Humidity = ";
+        humMsg += floatString_humidity;
+        humMsg += "%";
+        logs.info(humMsg.c_str());
+    } else {
+        logs.error("Error reading humidity!");
+    }
+}
+
 // Publicar dados dos sensores
 void publishSensorData() {
     if (!mqttClient.connected()) return;
@@ -101,18 +142,18 @@ void publishSensorData() {
     char payload[20];
     
     // Publicar temperatura
-    dtostrf(sensor.getTemperature(), 4, 1, payload);
+    dtostrf(temperature, 4, 1, payload);
     mqttClient.publish(TOPIC_BASE "sensor1/temperatura", payload);
     
     // Publicar humidade
-    dtostrf(sensor.getHumidity(), 4, 1, payload);
+    dtostrf(humidity, 4, 1, payload);
     mqttClient.publish(TOPIC_BASE "sensor1/humidade", payload);
     
     // Publicar estado
     String statusJson = "{\"sensor1\":{\"status\":\"OK\",\"temperatura\":";
-    statusJson += String(sensor.getTemperature(), 1);
+    statusJson += String(temperature, 1);
     statusJson += ",\"humidade\":";
-    statusJson += String(sensor.getHumidity(), 1);
+    statusJson += String(humidity, 1);
     statusJson += "}}";
     mqttClient.publish(TOPIC_SENSOR_STATUS, statusJson.c_str());
     
@@ -120,6 +161,32 @@ void publishSensorData() {
     mqttClient.publish(TOPIC_SD_STATUS, sdCardAvailable ? "OK" : "NOK");
     
     logs.debug("Published MQTT data");
+}
+
+// Guardar CSV
+void saveToCSV() {
+    if (temperature == 0) return;
+    
+    String csvLine = "";
+    DateTime now = get_rtc_datetime();
+    
+    // Timestamp
+    csvLine += String(now.year) + "-";
+    if (now.month < 10) csvLine += "0";
+    csvLine += String(now.month) + "-";
+    if (now.day < 10) csvLine += "0";
+    csvLine += String(now.day) + "T";
+    if (now.hours < 10) csvLine += "0";
+    csvLine += String(now.hours) + ":";
+    if (now.minutes < 10) csvLine += "0";
+    csvLine += String(now.minutes) + ":";
+    if (now.seconds < 10) csvLine += "0";
+    csvLine += String(now.seconds) + "Z";
+    
+    csvLine += ",sensor1,OK,";
+    csvLine += floatString_temperature;
+    
+    csv.data(csvLine.c_str());
 }
 
 // Setup
@@ -186,17 +253,19 @@ void setup() {
         logs.warning("Skipping MQTT - No WiFi connection");
     }
     
-    // 6. Inicializar sensor
-    logs.info("6. Initializing sensor...");
-    sensor.setLogger(&logs);
-    logs.info("Sensor configured");
+    // 6. Inicializar DHT - COMO GRUPO 2!
+    logs.info("6. Initializing DHT sensor...");
+    dht.begin();
+    
+    // Info do sensor
+    sensor_t sensor;
+    dht.temperature().getSensor(&sensor);
+    logs.debug(sensor.name);
+    
+    delay(2000); // Dar tempo ao sensor
+    logs.info("DHT sensor ready");
     
     logs.info("System ready!");
-    
-    // Forçar primeira leitura do sensor
-    delay(1000);
-    logs.info("First sensor reading...");
-    sensor.begin();
 }
 
 // Loop principal
@@ -225,22 +294,22 @@ void loop() {
         ledStatus.toggle();
     }
     
-    // Ler sensor
+    // Ler sensor - A CADA 5 SEGUNDOS
     if (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL) {
         lastSensorRead = currentTime;
         
         logs.debug("Reading sensor...");
-        sensor.begin();
+        readSensor();
         
         // Atualizar LED temperatura
-        if (sensor.getTemperature() >= TEMP_WARNING_HIGH) {
+        if (temperature >= TEMP_WARNING_HIGH) {
             ledTemp.off(); // LED verde apaga quando quente
         } else {
             ledTemp.on(); // LED verde aceso quando normal
         }
         
         // Guardar CSV
-        sensor.saveToCSV(&csv);
+        saveToCSV();
     }
     
     // Publicar MQTT
@@ -250,6 +319,7 @@ void loop() {
         
         // Atualização de estado
         logs.info("System status update");
-        logs.info("Sensor status OK");
     }
+    
+    delay(100); // Pequeno delay como Grupo 2
 }
