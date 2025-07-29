@@ -190,11 +190,21 @@ void setup() {
     // 6. Inicializar sensor
     logs.info("6. Initializing sensor...");
     dht.begin();
+    delay(1000); // Dar tempo ao sensor para estabilizar
     sensor = new SimpleSensor(&dht, &logs);
+    
+    // Teste inicial do sensor
+    sensor_t sensorInfo;
+    dht.temperature().getSensor(&sensorInfo);
+    logs.debug(sensorInfo.name);
     logs.info("DHT11 initialized");
     
     logs.info("System ready!");
-    delay(1000);
+    
+    // Primeira leitura do sensor após 2 segundos
+    delay(2000);
+    sensor->readSensor();
+    logs.info("First sensor reading completed");
 }
 
 // Loop principal

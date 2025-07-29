@@ -20,13 +20,15 @@ public:
     
     void readSensor() {
         sensors_event_t event;
+        static int errorCount = 0;
+        bool hasError = false;
         
         // Ler temperatura
         dht->temperature().getEvent(&event);
         if (!isnan(event.temperature)) {
             lastTemperature = event.temperature;
         } else {
-            logger->error("Failed to read temperature from DHT sensor!");
+            hasError = true;
         }
         
         // Ler humidade
@@ -34,14 +36,22 @@ public:
         if (!isnan(event.relative_humidity)) {
             lastHumidity = event.relative_humidity;
         } else {
-            logger->error("Failed to read humidity from DHT sensor!");
+            hasError = true;
         }
         
-        // Registar valores
-        logger->debug("Sensor reading completed");
-        char tempStr[10];
-        dtostrf(lastTemperature, 4, 1, tempStr);
-        logger->debug(tempStr);
+        // Log apenas a cada 10 erros para evitar spam
+        if (hasError) {
+            errorCount++;
+            if (errorCount % 10 == 1) {
+                logger->error("DHT sensor read failed");
+            }
+        } else {
+            errorCount = 0;
+            // Registar valores apenas quando sucesso
+            char tempStr[10];
+            dtostrf(lastTemperature, 4, 1, tempStr);
+            logger->debug(tempStr);
+        }
     }
     
     float getTemperature() { return lastTemperature; }
