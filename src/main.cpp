@@ -13,6 +13,7 @@
 #include "connect.hpp"
 #include "logs.hpp"
 #include "SimpleSensor.hpp"
+#include "NTP.hpp"
 
 // UART ESP8266
 HardwareSerial Serial1(PA10, PA9);
@@ -24,6 +25,9 @@ ExtMEM csv;
 // Sensor
 DHT_Unified dht(DHTPIN, DHTTYPE);
 SimpleSensor* sensor;
+
+// NTP
+NTPClient ntp;
 
 // LEDs
 LED ledStatus;
@@ -69,14 +73,9 @@ void reconnectMQTT() {
         logs.info("Connecting to MQTT...");
         
         if (mqttClient.connect(MQTT_CLIENT_ID)) {
-            logs.info("MQTT connected!");
             mqttConnected = true;
-            mqttClient.publish(TOPIC_SYSTEM_LOG, "System started");
         } else {
-            logs.error("MQTT failed. Retrying in 5s...");
-            char rcStr[10];
-            itoa(mqttClient.state(), rcStr, 10);
-            logs.debug(rcStr);
+            // MQTT falhou
             mqttConnected = false;
             delay(5000);
         }
@@ -108,7 +107,7 @@ void publishSensorData() {
     // Publicar estado do SD
     mqttClient.publish(TOPIC_SD_STATUS, sdCardAvailable ? "OK" : "NOK");
     
-    logs.debug("Published MQTT data");
+    // MQTT publicado
 }
 
 // Setup
@@ -117,60 +116,57 @@ void setup() {
     Serial.begin(SERIAL_BAUD_RATE);
     delay(1000);
     
-    logs.info("========================================");
-    logs.info("   SISTEMA DE ARREFECIMENTO");
-    logs.info("   STM32L476RG ");
-    logs.info("========================================");
+    logs.info("Sistema de Arrefecimento STM32L476RG");
     
-    // 1. Inicializar LEDs
-    logs.info("1. Initializing LEDs...");
+    // Inicializar LEDs
     ledStatus.init(LED_PIN);
     ledTemp.init(LED_TEMP_GREEN);
     ledWifi.init(LED_WIFI);
     ledSD.init(LED_SD);
     
-    // 2. Inicializar SD Card
-    logs.info("2. Initializing SD Card...");
+    // Inicializar SD Card
     sdCardAvailable = logs.initExtMem();
     if (sdCardAvailable) {
         logs.initFile("log");
         csv.initFile("csv");
         ledSD.on();
-        logs.info("SD Card OK");
+        // SD OK
     } else {
-        logs.error("SD Card failed!");
+        // SD falhou
         ledSD.off();
     }
     
-    // 3. Inicializar RTC
-    logs.info("3. Initializing RTC...");
+    // Inicializar RTC
     if (initRTC()) {
-        logs.info("RTC OK");
+        // RTC OK
         setRTCToCompileTime();
     } else {
-        logs.error("RTC failed!");
+        // RTC falhou
     }
     
-    // 4. Inicializar WiFi
-    logs.info("4. Initializing WiFi...");
+    // Inicializar WiFi
     Serial1.begin(SERIAL_BAUD_RATE);
     WiFi.init(Serial1);
     connectWiFi();
     wifiConnected = (WiFi.status() == WL_CONNECTED);
     ledWifi.setState(wifiConnected);
     
-    // 5. Inicializar MQTT
-    logs.info("5. Initializing MQTT...");
+    // Atualizar hora via NTP se WiFi ligado
+    if (wifiConnected) {
+        if (ntp.updateTime()) {
+            logs.info("Hora atualizada via NTP");
+        }
+    }
+    
+    // Inicializar MQTT
     mqttClient.setCallback(mqttCallback);
     connectMQTT();
     
-    // 6. Inicializar sensor
-    logs.info("6. Initializing sensor...");
+    // Inicializar sensor
     dht.begin();
     sensor = new SimpleSensor(&dht, &logs);
-    logs.info("DHT11 initialized");
     
-    logs.info("System ready!");
+    logs.info("Sistema pronto");
     delay(1000);
 }
 

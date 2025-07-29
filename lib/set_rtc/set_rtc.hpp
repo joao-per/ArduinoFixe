@@ -18,7 +18,7 @@ bool initRTC();
 
 void setRTCToCompileTime();
 
-void set_rtc_time(int year, int month, int day, int hour, int minute, int second);
+void set_rtc_time(int day, int month, int year, int hour, int minute, int second);
 
 DateTime get_rtc_datetime();
 

@@ -39,7 +39,6 @@ bool initRTC()
     rtc.begin();
     if (!rtc.isTimeSet() || SET_RTC_BOOT)
     {
-        Serial.println("Setting RTC to compile time...");
         setRTCToCompileTime();
     }
     return true;
@@ -47,22 +46,11 @@ bool initRTC()
 
 void setRTCToCompileTime()
 {
-    char monthStr[4];
-    int day, year, hour, minute, second;
-
-    // Parse __DATE__ → "Jul 16 2025"
-    sscanf(__DATE__, "%3s %d %d", monthStr, &day, &year);
-    int month = monthStrToNumber(monthStr);
-
-    // Parse __TIME__ → "14:35:21"
-    sscanf(__TIME__, "%d:%d:%d", &hour, &minute, &second);
-
-    set_rtc_time(day, month , year, hour, minute, second);
-
-    // RTC configurado
+    // Data fixa: 29/07/2025 18:32:00
+    set_rtc_time(29, 7, 2025, 18, 32, 0);
 }
 
-void set_rtc_time(int year, int month, int day, int hour, int minute, int second)
+void set_rtc_time(int day, int month, int year, int hour, int minute, int second)
 {
     rtc.setTime(hour, minute, second);
     rtc.setDate(1, day, month, year - 2000); // weekday dummy (1=Monday)

@@ -23,19 +23,21 @@ void callback(char *topic, byte *payload, unsigned int length)
 // Ligar WiFi
 void connectWiFi()
 {
-  while (WiFi.status() != WL_CONNECTED)
+  int tentativas = 0;
+  unsigned long startTime = millis();
+  
+  while (WiFi.status() != WL_CONNECTED && tentativas < 3 && (millis() - startTime) < 6000)
   {
-    logs.info("Connecting to WiFi...");
     WiFi.begin(sv.get_ssid(), sv.get_password());
-    delay(5000);
+    tentativas++;
+    delay(2000);
   }
 
-  logs.info("WiFi connected");
-  logs.debug(WiFi.localIP().toString().c_str());
-  logs.debug("Gateway:");
-  logs.debug(WiFi.gatewayIP().toString().c_str());
-  logs.debug("DNS:");
-  logs.debug(WiFi.dnsIP().toString().c_str());
+  if (WiFi.status() == WL_CONNECTED) {
+    logs.info("WiFi ligado");
+  } else {
+    logs.warning("WiFi falhou");
+  }
 }
 
 // Ligar MQTT
@@ -46,23 +48,18 @@ void connectMQTT()
 
   while (!mqttClient.connected())
   {
-    logs.info("Connecting to MQTT...");
+    // A ligar MQTT
 
     String clientId = "STM32_RECEIVER_";
     clientId += String(random(0xffff), HEX);
 
     if (mqttClient.connect(clientId.c_str()))
     {
-      logs.info("MQTT connected!");
       mqttClient.subscribe("stm32/topic");
-      logs.info("Subscribed to stm32/topic");
     }
     else
     {
-      logs.error("MQTT failed. Retrying in 2s...");
-      char rcStr[10];
-      itoa(mqttClient.state(), rcStr, 10);
-      logs.debug(rcStr);
+      // MQTT falhou
       delay(2000);
     }
   }
