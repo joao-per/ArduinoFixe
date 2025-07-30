@@ -43,19 +43,20 @@ LED redLed;   // Classe LED vermelho
 
 uint32_t delayMS; // Variável para atraso em milissegundos
 
-void sendTemperature() { // Função para enviar dados de temperatura para o broker MQTT
-    if (WiFi.status() == WL_CONNECTED && mqttClient.connected()) { // Verificar se WiFi e MQTT estão ligados
-        sensor.getTemperatureAverage(); // Obter temperatura média dos sensores
+void sendTemperature() { // Função para ler temperatura (sem WiFi)
+    Serial.println("=== TIMER DISPAROU ==="); // Debug do timer
+    
+    sensor.getTemperatureAverage(); // Obter temperatura média dos sensores
 
-        for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
-            dtostrf(sensor_data.temperatureAverageSensors[i], 2, 2, tempStr);
-            String topic = "sensor" + String(i + 1) + "/temp";
-            mqttClient.publish(topic.c_str(), tempStr); // Publicar dados de temperatura no tópico MQTT
-
-            String pubMsgStr = "Publicado em " + topic + ": " + String(tempStr);
-            logs.info(pubMsgStr.c_str());
-        }
+    // Log das temperaturas (sem MQTT por agora)
+    for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
+        dtostrf(sensor_data.temperatureAverageSensors[i], 2, 2, tempStr);
+        String tempMsg = "Sensor " + String(i + 1) + " temperatura: " + String(tempStr) + "C";
+        logs.info(tempMsg.c_str());
+        Serial.println(tempMsg); // Também no Serial para debug
     }
+    
+    Serial.println("=== FIM LEITURA ===");
 }
 
 void connectWiFi() { // Função para ligar ao WiFi
