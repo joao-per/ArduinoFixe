@@ -43,14 +43,30 @@ LED redLed;   // Classe LED vermelho
 
 uint32_t delayMS; // Variável para atraso em milissegundos
 
-void sendTemperature() { // Função para ler temperatura (sem WiFi)
+void sendTemperature() { // Função para ler temperatura e enviar para MQTT (se disponível)
     sensor.getTemperatureAverage(); // Obter temperatura média dos sensores
     
-    // Log das temperaturas dos 4 sensores
+    logs.info(""); // Linha em branco
+    logs.info("=== LEITURA DE TEMPERATURA ===");
+    logs.info(""); // Linha em branco
+
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
         dtostrf(sensor_data.temperatureAverageSensors[i], 2, 2, tempStr);
         String tempMsg = "Sensor " + String(i + 1) + " temperatura: " + String(tempStr) + "C";
         logs.info(tempMsg.c_str());
+        
+        // Escrever no CSV
+        String csvLine = String(millis()) + ";" + String(i + 1) + ";OK;" + String(tempStr);
+        csv.data(csvLine.c_str());
+    }
+    
+    // Enviar para MQTT se disponível
+    if (WiFi.status() == WL_CONNECTED && mqttClient.connected()) {
+        for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
+            dtostrf(sensor_data.temperatureAverageSensors[i], 2, 2, tempStr);
+            String topic = "sensor" + String(i + 1) + "/temp";
+            mqttClient.publish(topic.c_str(), tempStr);
+        }
     }
 }
 
@@ -142,29 +158,31 @@ void setup() { // Função de configuração
         logs.error("Falha no RTC!");
     }
 
-    // WiFi/MQTT temporariamente desativado para teste
-    // Serial1.begin(SERIAL_BAUD_RATE);               // Inicializar Serial1 para comunicação
-    // WiFi.init(Serial1);                            // Inicializar WiFi com Serial1
-    // connectWiFi();                                 // Ligar ao WiFi
-    // mqttClient.setServer(SERVER_IP, SERVER_PORT);  // Definir servidor MQTT
-    // connectMQTT();                                 // Ligar ao broker MQTT
+    Serial1.begin(SERIAL_BAUD_RATE);               // Inicializar Serial1 para comunicação
+    WiFi.init(Serial1);                            // Inicializar WiFi com Serial1
+    connectWiFi();                                 // Ligar ao WiFi
+    mqttClient.setServer(SERVER_IP, SERVER_PORT);  // Definir servidor MQTT
+    connectMQTT();                                 // Ligar ao broker MQTT
     
     logs.info("Sistema pronto!");
 }
 
 void loop() { // Função de ciclo principal
-    // WiFi/MQTT temporariamente desativado
-    // if (WiFi.status() != WL_CONNECTED) { // Verificar se WiFi está desligado
-    //     connectWiFi(); // Religar ao WiFi
-    // }
+    // WiFi/MQTT em background - não bloqueia se falhar
+    if (WiFi.status() != WL_CONNECTED) {
+        // Não tenta reconectar constantemente - só no setup
+    }
+    
+    if (WiFi.status() == WL_CONNECTED && !mqttClient.connected()) {
+        // Só tenta MQTT se WiFi estiver ligado
+        connectMQTT();
+    }
+
+    if (mqttClient.connected()) {
+        mqttClient.loop();
+    }
 
     delay(DELAY_TO_STABILIZE); // Dar tempo para estabilizar
-
-    // if (!mqttClient.connected()) { // Verificar se cliente MQTT está desligado
-    //     connectMQTT(); // Religar ao broker MQTT
-    // }
-
-    // mqttClient.loop();
 
     // Controlo LED baseado na temperatura do sensor 1
     if (sensor_data.temperatureAverageSensors[0] > THIRTY_DEGREES) {
