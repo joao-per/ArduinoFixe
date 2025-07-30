@@ -44,19 +44,14 @@ LED redLed;   // Classe LED vermelho
 uint32_t delayMS; // Variável para atraso em milissegundos
 
 void sendTemperature() { // Função para ler temperatura (sem WiFi)
-    Serial.println("=== TIMER DISPAROU ==="); // Debug do timer
-    
     sensor.getTemperatureAverage(); // Obter temperatura média dos sensores
-
-    // Log das temperaturas (sem MQTT por agora)
+    
+    // Log das temperaturas dos 4 sensores
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
         dtostrf(sensor_data.temperatureAverageSensors[i], 2, 2, tempStr);
         String tempMsg = "Sensor " + String(i + 1) + " temperatura: " + String(tempStr) + "C";
         logs.info(tempMsg.c_str());
-        Serial.println(tempMsg); // Também no Serial para debug
     }
-    
-    Serial.println("=== FIM LEITURA ===");
 }
 
 void connectWiFi() { // Função para ligar ao WiFi
