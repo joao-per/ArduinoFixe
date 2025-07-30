@@ -72,7 +72,7 @@ void sensorEvent::getTemperatureAverage() { // Obter temperatura média dos sens
     sensor_data.temperatureAverageSensors[2] -= offsetTempSensors;                                                 // Ajustar temperatura para sensor 3
     sensor_data.temperatureAverageSensors[3] = sensor_data.temperatureAverageSensors[3] + (2 * offsetTempSensors); // Ajustar temperatura para sensor 4
 
-    writeTemperatureAverage(); // Escrever dados de temperatura média nos logs
+    // writeTemperatureAverage(); // Logs removidos - já temos no main
 }
 
 void sensorEvent::getHumidityAverage() { // Obter humidade média dos sensores

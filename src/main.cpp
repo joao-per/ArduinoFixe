@@ -112,7 +112,7 @@ void setup() { // Função de configuração
     delay(1000);
     
     logs.info("========================================");
-    logs.info("   SISTEMA DE ARREFECIMENTO - GRUPO 6");
+    logs.info("   SISTEMA DE ARREFECIMENTO - GRUPO 4");
     logs.info("   STM32L476RG");
     logs.info("========================================");
 
