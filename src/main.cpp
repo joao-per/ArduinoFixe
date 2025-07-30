@@ -1,325 +1,177 @@
-// Sistema de Arrefecimento - STM32L476RG
+// Bibliotecas do framework
+#include <Arduino.h>        // Biblioteca principal do Arduino
+#include <WiFiEspAT.h>      // Biblioteca WiFi
+#include <PubSubClient.h>   // Biblioteca MQTT
+#include <HardwareSerial.h> // Biblioteca HardwareSerial
 
-#include <Arduino.h>
-#include <WiFiEspAT.h>
-#include <PubSubClient.h>
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
-#include <DHT_U.h>
+// Includes locais
+#include "sensorEvent.hpp" // Biblioteca de eventos do sensor
+#include "LED.hpp"         // Biblioteca LED
+#include "config.hpp"      // Configuração
+#include "logs.hpp"        // Logs
+#include "connect.hpp"     // Funções de ligação
+#include "set_rtc.hpp"     // RTC
 
-#include <config.hpp>
-#include "set_rtc.hpp"
-#include "LED.hpp"
-#include "connect.hpp"
-#include "logs.hpp"
-#include "NTP.hpp"
+// Variáveis
+char tempStr[100];     // String para dados de temperatura
+char localIpStr[50];   // String para endereço IP local
+char gatewayIpStr[50]; // String para endereço IP do gateway
+char dnsIpStr[50];     // String para endereço IP do DNS
+char mqttMsg[100];     // String para mensagens MQTT
+char pubMsg[100];      // String para mensagens publicadas
 
-// UART ESP8266
-HardwareSerial Serial1(PA10, PA9);
+// Inicialização de estruturas
+struct configData config_data = {0}; // Inicialização da estrutura de dados de configuração
+extern struct sensorData sensor_data; // Estrutura de dados do sensor de sensorEvent.cpp
 
-// Objetos globais
-ExtMEM logs;
-ExtMEM csv;
+// Criar clientes WiFi e MQTT
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
 
-// DHT GLOBAL - COMO GRUPO 2!!!
-DHT_Unified dht(DHTPIN, DHTTYPE);
+// Definição de classes
+HardwareTimer *timer3 = new HardwareTimer(TIM3); // Criar instância HardwareTimer para TIM3
+HardwareSerial Serial1(PA10, PA9);               // Criar instância HardwareSerial para Serial1
 
-// LEDs
-LED ledStatus;
-LED ledTemp;
-LED ledWifi;
-LED ledSD;
+ExtMEM logs; // Classe de logs
+ExtMEM csv;  // Classe CSV
+ExtMEM asn;  // Classe ASN
 
-// WiFi e MQTT
-extern WiFiClient wifiClient;
-extern PubSubClient mqttClient;
+sensorEvent sensor; // Classe de eventos do sensor
 
-// NTP
-NTPClient ntp;
+LED greenLed; // Classe LED verde
+LED redLed;   // Classe LED vermelho
 
-// Temporização
-unsigned long lastSensorRead = 0;
-unsigned long lastMqttPublish = 0;
+uint32_t delayMS; // Variável para atraso em milissegundos
 
-// Estados
-bool sdCardAvailable = false;
-bool wifiConnected = false;
-bool mqttConnected = false;
+void sendTemperature() { // Função para enviar dados de temperatura para o broker MQTT
+    if (WiFi.status() == WL_CONNECTED && mqttClient.connected()) { // Verificar se WiFi e MQTT estão ligados
+        sensor.getTemperatureAverage(); // Obter temperatura média dos sensores
 
-// Valores do sensor
-float temperature = 0.0;
-float humidity = 0.0;
+        for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
+            dtostrf(sensor_data.temperatureAverageSensors[i], 2, 2, tempStr);
+            String topic = "sensor" + String(i + 1) + "/temp";
+            mqttClient.publish(topic.c_str(), tempStr); // Publicar dados de temperatura no tópico MQTT
 
-// Buffers
-char floatString_temperature[10];
-char floatString_humidity[10];
-char msg_temperature[150];
-char msg_humidity[150];
-char time_string[20];
-configData config_data = {0};
-
-// Callback MQTT
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
-    char message[length + 1];
-    memcpy(message, payload, length);
-    message[length] = '\0';
-    
-    logs.info("MQTT received message");
-    logs.debug(topic);
-    logs.debug(message);
-}
-
-// Reconectar MQTT
-void reconnectMQTT() {
-    if (WiFi.status() != WL_CONNECTED) {
-        mqttConnected = false;
-        return;
-    }
-    
-    int tentativas = 0;
-    while (!mqttClient.connected() && tentativas < 3) {
-        logs.info("Connecting to MQTT...");
-        
-        if (mqttClient.connect(MQTT_CLIENT_ID)) {
-            logs.info("MQTT connected!");
-            mqttConnected = true;
-            mqttClient.publish(TOPIC_SYSTEM_LOG, "System started");
-            break;
-        } else {
-            logs.error("MQTT failed. Retrying...");
-            char rcStr[10];
-            itoa(mqttClient.state(), rcStr, 10);
-            logs.debug(rcStr);
-            mqttConnected = false;
-            tentativas++;
-            if (tentativas < 3) delay(2000);
+            String pubMsgStr = "Publicado em " + topic + ": " + String(tempStr);
+            logs.info(pubMsgStr.c_str());
         }
     }
 }
 
-// Ler sensor - ESTILO GRUPO 2
-void readSensor() {
-    sensors_event_t event;
+void connectWiFi() { // Função para ligar ao WiFi
+    int attempts = 0;
+    unsigned long startTime = millis();
     
-    // Temperatura
-    dht.temperature().getEvent(&event);
-    if (!isnan(event.temperature)) {
-        temperature = event.temperature;
-        
-        // Log estilo Grupo 2
-        dtostrf(temperature, 4, 1, floatString_temperature);
-        logs.debug(floatString_temperature);
-        
-        char msg[64];
-        String tempMsg = "Temperature = ";
-        tempMsg += floatString_temperature;
-        tempMsg += "C";
-        logs.info(tempMsg.c_str());
-    } else {
-        logs.error("Error reading temperature!");
+    while (WiFi.status() != WL_CONNECTED && attempts < 3 && (millis() - startTime) < 6000) { // Verificar se WiFi está ligado
+        logs.info("A ligar ao WiFi...");
+        WiFi.begin(SERVER_SSID, SERVER_PASSWORD); // Iniciar ligação WiFi
+        attempts++;
+        delay(DELAY_WIFI_CONNECTION);
     }
-    
-    // Humidade
-    dht.humidity().getEvent(&event);
-    if (!isnan(event.relative_humidity)) {
-        humidity = event.relative_humidity;
-        
-        dtostrf(humidity, 4, 1, floatString_humidity);
-        
-        String humMsg = "Humidity = ";
-        humMsg += floatString_humidity;
-        humMsg += "%";
-        logs.info(humMsg.c_str());
+
+    if (WiFi.status() == WL_CONNECTED) {
+        String localIpMsg = "WiFi ligado: " + WiFi.localIP().toString();
+        logs.info(localIpMsg.c_str());
+
+        String gatewayMsg = "Gateway: " + WiFi.gatewayIP().toString();
+        logs.info(gatewayMsg.c_str());
+
+        String dnsMsg = "DNS: " + WiFi.dnsIP().toString();
+        logs.info(dnsMsg.c_str());
     } else {
-        logs.error("Error reading humidity!");
+        logs.warning("Falha na ligação WiFi após 3 tentativas");
     }
 }
 
-// Publicar dados dos sensores
-void publishSensorData() {
-    if (!mqttClient.connected()) return;
+void connectMQTT() { // Função para ligar ao broker MQTT
+    if (WiFi.status() != WL_CONNECTED) {
+        logs.warning("Não é possível ligar MQTT - Sem WiFi");
+        return;
+    }
     
-    char payload[20];
-    
-    // Publicar temperatura
-    dtostrf(temperature, 4, 1, payload);
-    mqttClient.publish(TOPIC_BASE "sensor1/temperatura", payload);
-    
-    // Publicar humidade
-    dtostrf(humidity, 4, 1, payload);
-    mqttClient.publish(TOPIC_BASE "sensor1/humidade", payload);
-    
-    // Publicar estado
-    String statusJson = "{\"sensor1\":{\"status\":\"OK\",\"temperatura\":";
-    statusJson += String(temperature, 1);
-    statusJson += ",\"humidade\":";
-    statusJson += String(humidity, 1);
-    statusJson += "}}";
-    mqttClient.publish(TOPIC_SENSOR_STATUS, statusJson.c_str());
-    
-    // Publicar estado do SD
-    mqttClient.publish(TOPIC_SD_STATUS, sdCardAvailable ? "OK" : "NOK");
-    
-    logs.debug("Published MQTT data");
+    mqttClient.setServer(SERVER_IP, SERVER_PORT);
+
+    int attempts = 0;
+    while (!mqttClient.connected() && attempts < 3) { // Verificar se cliente MQTT está ligado
+        logs.info("A ligar ao MQTT...");
+
+        String clientId = "STM32_SENDER_";
+        clientId += String(random(0xffff), HEX);
+
+        if (mqttClient.connect(clientId.c_str())) {
+            logs.info("MQTT ligado!");
+            break;
+        } else {
+            String mqttMsgStr = "Falha na ligação MQTT, rc=" + String(mqttClient.state()) + " a tentar novamente em 2 segundos...";
+            logs.error(mqttMsgStr.c_str());
+            attempts++;
+            if (attempts < 3) delay(DELAY_MQTT_CONNECTION);
+        }
+    }
 }
 
-// Guardar CSV
-void saveToCSV() {
-    if (temperature == 0) return;
-    
-    String csvLine = "";
-    DateTime now = get_rtc_datetime();
-    
-    // Timestamp
-    csvLine += String(now.year) + "-";
-    if (now.month < 10) csvLine += "0";
-    csvLine += String(now.month) + "-";
-    if (now.day < 10) csvLine += "0";
-    csvLine += String(now.day) + "T";
-    if (now.hours < 10) csvLine += "0";
-    csvLine += String(now.hours) + ":";
-    if (now.minutes < 10) csvLine += "0";
-    csvLine += String(now.minutes) + ":";
-    if (now.seconds < 10) csvLine += "0";
-    csvLine += String(now.seconds) + "Z";
-    
-    csvLine += ",sensor1,OK,";
-    csvLine += floatString_temperature;
-    
-    csv.data(csvLine.c_str());
-}
-
-// Setup
-void setup() {
-    // Porta série
+void setup() { // Função de configuração
+    // Série
     Serial.begin(SERIAL_BAUD_RATE);
     delay(1000);
     
     logs.info("========================================");
-    logs.info("   SISTEMA DE ARREFECIMENTO");
+    logs.info("   SISTEMA DE ARREFECIMENTO - GRUPO 6");
     logs.info("   STM32L476RG");
     logs.info("========================================");
-    
-    // 1. Inicializar LEDs
-    logs.info("1. Initializing LEDs...");
-    ledStatus.init(LED_PIN);
-    ledTemp.init(LED_TEMP_GREEN);
-    ledWifi.init(LED_WIFI);
-    ledSD.init(LED_SD);
-    
-    // 2. Inicializar SD Card
-    logs.info("2. Initializing SD Card...");
-    sdCardAvailable = logs.initExtMem();
-    if (sdCardAvailable) {
-        logs.initFile("log");
-        csv.initFile("csv");
-        ledSD.on();
-        logs.info("SD Card OK");
-    } else {
-        logs.error("SD Card failed!");
-        ledSD.off();
-    }
-    
-    // 3. Inicializar RTC
-    logs.info("3. Initializing RTC...");
+
+    logs.initExtMem();    // Inicializar memória externa
+    logs.initFile("log"); // Inicializar ficheiro de log
+    csv.initFile("csv");  // Inicializar ficheiro CSV
+    csv.data(CSV_HEADER); // Escrever cabeçalho CSV
+
+    asn.readSN(); // Ler número de série do cartão SD
+
+    sensor.initSensor(); // Inicializar sensor
+
+    greenLed.init(LED_TEMP_GREEN); // Inicializar LED verde
+    greenLed.on();                 // Ligar LED verde
+
+    // Configuração do timer para MQTT automático
+    timer3->setPrescaleFactor(TIMER3_PRESCALE); // Definir prescaler do timer
+    timer3->setOverflow(TIMER3_OVERFLOW);       // Definir overflow do timer
+    timer3->attachInterrupt(sendTemperature);   // Anexar interrupção para enviar temperatura
+    timer3->resume();
+
+    // RTC
     if (initRTC()) {
         logs.info("RTC OK");
         setRTCToCompileTime();
     } else {
-        logs.error("RTC failed!");
+        logs.error("Falha no RTC!");
     }
+
+    Serial1.begin(SERIAL_BAUD_RATE);               // Inicializar Serial1 para comunicação
+    WiFi.init(Serial1);                            // Inicializar WiFi com Serial1
+    connectWiFi();                                 // Ligar ao WiFi
+    mqttClient.setServer(SERVER_IP, SERVER_PORT);  // Definir servidor MQTT
+    connectMQTT();                                 // Ligar ao broker MQTT
     
-    // 4. Inicializar WiFi
-    logs.info("4. Initializing WiFi...");
-    Serial1.begin(SERIAL_BAUD_RATE);
-    WiFi.init(Serial1);
-    connectWiFi();
-    wifiConnected = (WiFi.status() == WL_CONNECTED);
-    ledWifi.setState(wifiConnected);
-    
-    // Atualizar hora via NTP se WiFi ligado
-    if (wifiConnected) {
-        if (ntp.updateTime()) {
-            logs.info("Hora atualizada via NTP");
-        }
-    }
-    
-    // 5. Inicializar MQTT
-    logs.info("5. Initializing MQTT...");
-    if (wifiConnected) {
-        mqttClient.setCallback(mqttCallback);
-        connectMQTT();
-    } else {
-        logs.warning("Skipping MQTT - No WiFi connection");
-    }
-    
-    // 6. Inicializar DHT - COMO GRUPO 2!
-    logs.info("6. Initializing DHT sensor...");
-    dht.begin();
-    
-    // Info do sensor
-    sensor_t sensor;
-    dht.temperature().getSensor(&sensor);
-    logs.debug(sensor.name);
-    
-    delay(2000); // Dar tempo ao sensor
-    logs.info("DHT sensor ready");
-    
-    logs.info("System ready!");
+    logs.info("Sistema pronto!");
 }
 
-// Loop principal
-void loop() {
-    unsigned long currentTime = millis();
-    
-    // Verificar ligações
-    if (WiFi.status() != WL_CONNECTED) {
-        wifiConnected = false;
-        ledWifi.off();
-        connectWiFi();
-        wifiConnected = (WiFi.status() == WL_CONNECTED);
-        ledWifi.setState(wifiConnected);
+void loop() { // Função de ciclo principal
+    if (WiFi.status() != WL_CONNECTED) { // Verificar se WiFi está desligado
+        connectWiFi(); // Religar ao WiFi
     }
-    
-    if (!mqttClient.connected()) {
-        mqttConnected = false;
-        reconnectMQTT();
+
+    delay(DELAY_TO_STABILIZE); // Dar tempo para estabilizar
+
+    if (!mqttClient.connected()) { // Verificar se cliente MQTT está desligado
+        connectMQTT(); // Religar ao broker MQTT
     }
+
     mqttClient.loop();
-    
-    // Piscar LED estado
-    static unsigned long lastBlink = 0;
-    if (currentTime - lastBlink > 1000) {
-        lastBlink = currentTime;
-        ledStatus.toggle();
+
+    // Controlo LED baseado na temperatura do sensor 1
+    if (sensor_data.temperatureAverageSensors[0] > THIRTY_DEGREES) {
+        greenLed.blink(); // Piscar LED verde se temperatura exceder 30 graus
+    } else {
+        greenLed.on(); // Ligar LED verde se temperatura abaixo de 30 graus
     }
-    
-    // Ler sensor - A CADA 5 SEGUNDOS
-    if (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL) {
-        lastSensorRead = currentTime;
-        
-        logs.debug("Reading sensor...");
-        readSensor();
-        
-        // Atualizar LED temperatura
-        if (temperature >= TEMP_WARNING_HIGH) {
-            ledTemp.off(); // LED verde apaga quando quente
-        } else {
-            ledTemp.on(); // LED verde aceso quando normal
-        }
-        
-        // Guardar CSV
-        saveToCSV();
-    }
-    
-    // Publicar MQTT
-    if (currentTime - lastMqttPublish >= MQTT_PUBLISH_INTERVAL) {
-        lastMqttPublish = currentTime;
-        publishSensorData();
-        
-        // Atualização de estado
-        logs.info("System status update");
-    }
-    
-    delay(100); // Pequeno delay como Grupo 2
 }
