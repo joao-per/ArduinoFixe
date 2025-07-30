@@ -234,7 +234,27 @@ void ExtMEM::readSN()
   Serial.println("[INFO] Checking config file...");
   if (!sd.exists(CONFIG_FILENAME.c_str()))
   {
-    Serial.println("[ERROR] Config file does not exist!");
+    Serial.println("[INFO] Config file does not exist, creating default...");
+    
+    // Criar ficheiro config.json com valores padrão
+    if (!file.open(CONFIG_FILENAME.c_str(), O_WRONLY | O_CREAT | O_TRUNC))
+    {
+      Serial.println("[ERROR] Failed to create config file!");
+      digitalWrite(uSD_CS_PIN, HIGH);
+      return;
+    }
+    
+    // Escrever dados padrão no formato CSV
+    file.println("ASN001,SN001,v1.0,v1.0");
+    file.close();
+    Serial.println("[INFO] Default config file created successfully!");
+    
+    // Definir valores padrão na estrutura
+    strncpy(config_data.asn, "ASN001", sizeof(config_data.asn));
+    strncpy(config_data.sn, "SN001", sizeof(config_data.sn));
+    strncpy(config_data.hw, "v1.0", sizeof(config_data.hw));
+    strncpy(config_data.fw, "v1.0", sizeof(config_data.fw));
+    
     digitalWrite(uSD_CS_PIN, HIGH);
     return;
   }
