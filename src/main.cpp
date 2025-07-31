@@ -125,8 +125,9 @@ void connectMQTT() { // Função para ligar ao broker MQTT
 
 void setup() { // Função de configuração
     // Série
+    delay(1000); // Atraso inicial
     Serial.begin(SERIAL_BAUD_RATE);
-    delay(3000);
+    delay(4000);
     
     logs.info("========================================");
     logs.info("   SISTEMA DE ARREFECIMENTO - GRUPO 4");
@@ -136,6 +137,10 @@ void setup() { // Função de configuração
     if (logs.initExtMem()) {    // Inicializar memória externa
         logs.info("SD Card inicializado!");
         logs.initFile("log"); // Inicializar ficheiro de log
+        
+        // Partilhar estado do SD com outras instâncias
+        csv.initExtMem();  // CSV também precisa de saber que SD funciona
+        asn.initExtMem();  // ASN também
     } else {
         Serial.println("[ERRO] SD Card FALHOU!");
         logs.initFile("log"); // Tentar na mesma
@@ -143,7 +148,6 @@ void setup() { // Função de configuração
     
     // Inicializar CSV e verificar se funcionou
     logs.info("A tentar inicializar CSV...");
-    csv.initFile("csv");
     if (csv.initFile("csv")) {
         logs.info("CSV inicializado com sucesso!");
         csv.data(CSV_HEADER); // Escrever cabeçalho CSV

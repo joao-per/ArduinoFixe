@@ -14,6 +14,8 @@ SdFile file;
 
 ExtMEM::ExtMEM()
 {
+  fileIndex = 0;  // Inicializar índice para cada instância
+  filename[0] = '\0';  // Inicializar filename vazio
 }
 
 bool ExtMEM::initExtMem()
