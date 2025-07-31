@@ -53,7 +53,7 @@ void sendTemperature() { // Função para ler temperatura e enviar para MQTT (se
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
         dtostrf(sensor_data.temperatureAverageSensors[i], 2, 2, tempStr);
         String tempMsg = "Sensor " + String(i + 1) + " temperatura: " + String(tempStr) + "C";
-        logs.info(tempMsg.c_str());
+        logs.debug(tempMsg.c_str());
         
         // Escrever no CSV
         String csvLine = String(millis()) + ";" + String(i + 1) + ";OK;" + String(tempStr);
@@ -144,12 +144,6 @@ void setup() { // Função de configuração
     greenLed.init(LED_TEMP_GREEN); // Inicializar LED verde
     greenLed.on();                 // Ligar LED verde
 
-    // Configuração do timer para MQTT automático
-    timer3->setPrescaleFactor(TIMER3_PRESCALE); // Definir prescaler do timer
-    timer3->setOverflow(TIMER3_OVERFLOW);       // Definir overflow do timer
-    timer3->attachInterrupt(sendTemperature);   // Anexar interrupção para enviar temperatura
-    timer3->resume();
-
     // RTC
     if (initRTC()) {
         logs.info("RTC OK");
@@ -165,6 +159,14 @@ void setup() { // Função de configuração
     connectMQTT();                                 // Ligar ao broker MQTT
     
     logs.info("Sistema pronto!");
+
+    // Configuração do timer para MQTT automático (APÓS conexões)
+    timer3->setPrescaleFactor(TIMER3_PRESCALE); // Definir prescaler do timer
+    timer3->setOverflow(TIMER3_OVERFLOW);       // Definiroverflow do timer
+    timer3->attachInterrupt(sendTemperature);   // Anexar interrupção para enviar temperatura
+    timer3->resume();
+    
+    logs.info("Timer de leituras iniciado!");
 }
 
 void loop() { // Função de ciclo principal
