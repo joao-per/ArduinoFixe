@@ -126,7 +126,7 @@ void connectMQTT() { // Função para ligar ao broker MQTT
 void setup() { // Função de configuração
     // Série
     Serial.begin(SERIAL_BAUD_RATE);
-    delay(1000);
+    delay(3000);
     
     logs.info("========================================");
     logs.info("   SISTEMA DE ARREFECIMENTO - GRUPO 4");
@@ -143,6 +143,7 @@ void setup() { // Função de configuração
     
     // Inicializar CSV e verificar se funcionou
     logs.info("A tentar inicializar CSV...");
+    csv.initFile("csv");
     if (csv.initFile("csv")) {
         logs.info("CSV inicializado com sucesso!");
         csv.data(CSV_HEADER); // Escrever cabeçalho CSV
@@ -154,11 +155,10 @@ void setup() { // Função de configuração
 
     asn.readSN(); // Ler número de série do cartão SD
 
-    sensor.initSensor(); // Inicializar sensor
-
+    
     greenLed.init(LED_TEMP_GREEN); // Inicializar LED verde
     greenLed.on();                 // Ligar LED verde
-
+    
     // RTC
     if (initRTC()) {
         logs.info("RTC OK");
@@ -166,7 +166,7 @@ void setup() { // Função de configuração
     } else {
         logs.error("Falha no RTC!");
     }
-
+    
     Serial1.begin(SERIAL_BAUD_RATE);               // Inicializar Serial1 para comunicação
     WiFi.init(Serial1);                            // Inicializar WiFi com Serial1
     connectWiFi();                                 // Ligar ao WiFi
@@ -174,7 +174,7 @@ void setup() { // Função de configuração
     connectMQTT();                                 // Ligar ao broker MQTT
     
     logs.info("Sistema pronto!");
-
+    
     // Configuração do timer para MQTT automático (APÓS conexões)
     timer3->setPrescaleFactor(TIMER3_PRESCALE); // Definir prescaler do timer
     timer3->setOverflow(TIMER3_OVERFLOW);       // Definiroverflow do timer
@@ -182,6 +182,7 @@ void setup() { // Função de configuração
     timer3->resume();
     
     logs.info("Timer de leituras iniciado!");
+    sensor.initSensor(); // Inicializar sensor
 }
 
 void loop() { // Função de ciclo principal
