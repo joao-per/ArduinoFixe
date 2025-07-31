@@ -58,7 +58,7 @@ void sendTemperature() { // Função para ler temperatura e enviar para MQTT (se
         // Escrever no CSV
         String csvLine = String(millis()) + ";" + String(i + 1) + ";OK;" + String(tempStr);
         csv.data(csvLine.c_str());
-        logs.debug("CSV: " + csvLine); // Debug da linha CSV
+        // logs.info("Dados CSV escritos"); // Sem concatenação complicada
     }
     
     // Enviar para MQTT se disponível
