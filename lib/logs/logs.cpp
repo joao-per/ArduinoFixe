@@ -3,9 +3,8 @@
 #include "config.hpp"
 #include "set_rtc.hpp"
 
-char filename[20];
+// Variáveis globais só para date_time
 char date_time[20];
-int fileIndex = 0;
 
 SdFat sd;
 SdFile file;

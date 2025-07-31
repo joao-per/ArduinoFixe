@@ -103,6 +103,8 @@ private:
   bool isLogFileOpen;
   bool isCSVFileOpen;
   bool isSDCardInitialized;
+  char filename[30];  // Cada instância tem o seu filename
+  int fileIndex;
 };
 
 #endif // ExtMEM_HPP_INCLUDED_
