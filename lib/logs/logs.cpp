@@ -1,5 +1,6 @@
 // Local Includes
 #include "logs.hpp"
+#include "config.hpp"
 #include "set_rtc.hpp"
 
 char filename[20];

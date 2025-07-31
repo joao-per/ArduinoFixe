@@ -58,6 +58,7 @@ void sendTemperature() { // Função para ler temperatura e enviar para MQTT (se
         // Escrever no CSV
         String csvLine = String(millis()) + ";" + String(i + 1) + ";OK;" + String(tempStr);
         csv.data(csvLine.c_str());
+        logs.debug("CSV: " + csvLine); // Debug da linha CSV
     }
     
     // Enviar para MQTT se disponível
@@ -134,8 +135,15 @@ void setup() { // Função de configuração
 
     logs.initExtMem();    // Inicializar memória externa
     logs.initFile("log"); // Inicializar ficheiro de log
-    csv.initFile("csv");  // Inicializar ficheiro CSV
-    csv.data(CSV_HEADER); // Escrever cabeçalho CSV
+    
+    // Inicializar CSV e verificar se funcionou
+    if (csv.initFile("csv")) {
+        logs.info("CSV inicializado com sucesso!");
+        csv.data(CSV_HEADER); // Escrever cabeçalho CSV
+        logs.info("Cabeçalho CSV escrito!");
+    } else {
+        logs.error("FALHA ao inicializar CSV!");
+    }
 
     asn.readSN(); // Ler número de série do cartão SD
 
