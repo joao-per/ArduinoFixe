@@ -129,22 +129,24 @@ void setup() { // Função de configuração
     Serial.begin(SERIAL_BAUD_RATE);
     delay(4000);
     
-    logs.info("========================================");
-    logs.info("   SISTEMA DE ARREFECIMENTO - GRUPO 4");
-    logs.info("   STM32L476RG");
-    logs.info("========================================");
-
-    if (logs.initExtMem()) {    // Inicializar memória externa
-        logs.info("SD Card inicializado!");
-        logs.initFile("log"); // Inicializar ficheiro de log
-        
+    // Inicializar SD ANTES de qualquer log
+    if (logs.initExtMem()) {
+        Serial.println("[INFO] SD Card inicializado!");
         // Partilhar estado do SD com outras instâncias
-        csv.initExtMem();  // CSV também precisa de saber que SD funciona
-        asn.initExtMem();  // ASN também
+        csv.initExtMem();
+        asn.initExtMem();
+        
+        // Agora sim fazer logs
+        logs.info("========================================");
+        logs.info("   SISTEMA DE ARREFECIMENTO - GRUPO 4");
+        logs.info("   STM32L476RG");
+        logs.info("========================================");
     } else {
         Serial.println("[ERRO] SD Card FALHOU!");
-        logs.initFile("log"); // Tentar na mesma
     }
+
+    // SD já foi inicializado acima
+    logs.initFile("log"); // Inicializar ficheiro de log
     
     // Inicializar CSV e verificar se funcionou
     logs.info("A tentar inicializar CSV...");
