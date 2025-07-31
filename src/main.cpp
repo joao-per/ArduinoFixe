@@ -180,6 +180,7 @@ void setup() { // Função de configuração
     connectMQTT();                                 // Ligar ao broker MQTT
     
     logs.info("Sistema pronto!");
+    sensor.initSensor(); // Inicializar sensor
     
     // Configuração do timer para MQTT automático (APÓS conexões)
     timer3->setPrescaleFactor(TIMER3_PRESCALE); // Definir prescaler do timer
@@ -188,7 +189,6 @@ void setup() { // Função de configuração
     timer3->resume();
     
     logs.info("Timer de leituras iniciado!");
-    sensor.initSensor(); // Inicializar sensor
 }
 
 void loop() { // Função de ciclo principal
