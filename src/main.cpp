@@ -133,16 +133,23 @@ void setup() { // Função de configuração
     logs.info("   STM32L476RG");
     logs.info("========================================");
 
-    logs.initExtMem();    // Inicializar memória externa
-    logs.initFile("log"); // Inicializar ficheiro de log
+    if (logs.initExtMem()) {    // Inicializar memória externa
+        logs.info("SD Card inicializado!");
+        logs.initFile("log"); // Inicializar ficheiro de log
+    } else {
+        Serial.println("[ERRO] SD Card FALHOU!");
+        logs.initFile("log"); // Tentar na mesma
+    }
     
     // Inicializar CSV e verificar se funcionou
+    logs.info("A tentar inicializar CSV...");
     if (csv.initFile("csv")) {
         logs.info("CSV inicializado com sucesso!");
         csv.data(CSV_HEADER); // Escrever cabeçalho CSV
         logs.info("Cabeçalho CSV escrito!");
     } else {
         logs.error("FALHA ao inicializar CSV!");
+        logs.error("Possível problema: SD card não inicializado?");
     }
 
     asn.readSN(); // Ler número de série do cartão SD

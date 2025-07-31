@@ -51,17 +51,16 @@ bool ExtMEM::initFile(const char *type)
     return false;
   }
 
-  if (strcmp(type, "csv") == 0) {
-    // Para CSV, usar sempre o mesmo ficheiro (não incrementar)
-    snprintf(filename, sizeof(filename), "%s%s.%s", LOG_PATH.c_str(), CSV_FILENAME.c_str(), type);
-  } else {
-    // Para logs, procurar o próximo ficheiro disponível
-    do
-    {
+  // Usar a mesma lógica para todos os ficheiros (funciona para logs)
+  do
+  {
+    if (strcmp(type, "csv") == 0) {
+      snprintf(filename, sizeof(filename), "%s%s%d.%s", LOG_PATH.c_str(), CSV_FILENAME.c_str(), fileIndex, type);
+    } else {
       snprintf(filename, sizeof(filename), "%s%s%d.%s", LOG_PATH.c_str(), LOG_FILENAME.c_str(), fileIndex, type);
-      fileIndex++;
-    } while (sd.exists(filename));
-  }
+    }
+    fileIndex++;
+  } while (sd.exists(filename));
 
   return true;
 }
